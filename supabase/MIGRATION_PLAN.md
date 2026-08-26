@@ -676,14 +676,15 @@ CREATE POLICY "roles_delete_owner" ON roles
 -- ============================================================
 -- PROFILES
 -- ============================================================
+-- Profile creation is handled exclusively by the handle_new_user()
+-- trigger on auth.users. No client-side INSERT policy is needed.
+-- ============================================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "profiles_select_authenticated" ON profiles
   FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "profiles_insert_system" ON profiles
-  FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = id);
+-- NO INSERT POLICY — profiles are created by handle_new_user() trigger only
 
 CREATE POLICY "profiles_update_self_or_admin" ON profiles
   FOR UPDATE TO authenticated
@@ -985,22 +986,101 @@ CREATE POLICY "tags_manage_admin" ON tags
 -- ============================================================
 -- TAG JUNCTION TABLES
 -- ============================================================
+-- Granular policies: members can manage tags on entities they own/created
+-- Read access is open for team visibility
+-- ============================================================
 ALTER TABLE task_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE decision_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_tags ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "task_tags_all_members" ON task_tags
-  FOR ALL TO authenticated USING (true);
+-- task_tags: SELECT open, INSERT/DELETE require task ownership or admin
+CREATE POLICY "task_tags_select_members" ON task_tags
+  FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "project_tags_all_members" ON project_tags
-  FOR ALL TO authenticated USING (true);
+CREATE POLICY "task_tags_insert_admin_or_task_owner" ON task_tags
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM tasks WHERE id = task_id AND (creator_id = auth.uid() OR owner_id = auth.uid()))
+  );
 
-CREATE POLICY "decision_tags_all_members" ON decision_tags
-  FOR ALL TO authenticated USING (true);
+CREATE POLICY "task_tags_delete_admin_or_task_owner" ON task_tags
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM tasks WHERE id = task_id AND (creator_id = auth.uid() OR owner_id = auth.uid()))
+  );
 
-CREATE POLICY "document_tags_all_members" ON document_tags
-  FOR ALL TO authenticated USING (true);
+-- project_tags: SELECT open, INSERT/DELETE require project ownership or admin
+CREATE POLICY "project_tags_select_members" ON project_tags
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "project_tags_insert_admin_or_project_owner" ON project_tags
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM projects WHERE id = project_id AND owner_id = auth.uid())
+  );
+
+CREATE POLICY "project_tags_delete_admin_or_project_owner" ON project_tags
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM projects WHERE id = project_id AND owner_id = auth.uid())
+  );
+
+-- decision_tags: SELECT open, INSERT/DELETE require decision ownership or admin
+CREATE POLICY "decision_tags_select_members" ON decision_tags
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "decision_tags_insert_admin_or_decision_owner" ON decision_tags
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM decisions WHERE id = decision_id AND (creator_id = auth.uid() OR owner_id = auth.uid()))
+  );
+
+CREATE POLICY "decision_tags_delete_admin_or_decision_owner" ON decision_tags
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM decisions WHERE id = decision_id AND (creator_id = auth.uid() OR owner_id = auth.uid()))
+  );
+
+-- document_tags: SELECT open, INSERT/DELETE require document ownership or admin
+CREATE POLICY "document_tags_select_members" ON document_tags
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "document_tags_insert_admin_or_document_owner" ON document_tags
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM documents WHERE id = document_id AND (author_id = auth.uid() OR owner_id = auth.uid()))
+  );
+
+CREATE POLICY "document_tags_delete_admin_or_document_owner" ON document_tags
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role_id IN (
+      SELECT id FROM roles WHERE name IN ('owner', 'admin')
+    ))
+    OR EXISTS (SELECT 1 FROM documents WHERE id = document_id AND (author_id = auth.uid() OR owner_id = auth.uid()))
+  );
 
 -- ============================================================
 -- TASK DEPENDENCIES
@@ -1066,15 +1146,17 @@ CREATE POLICY "comments_delete_self_or_admin" ON comments
 -- ============================================================
 -- NOTIFICATIONS
 -- ============================================================
+-- Notifications are created only by controlled server-side mechanisms
+-- (SECURITY DEFINER functions, service-role operations).
+-- No client-side INSERT policy is needed.
+-- ============================================================
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "notifications_select_self" ON notifications
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
 
-CREATE POLICY "notifications_insert_system" ON notifications
-  FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+-- NO INSERT POLICY — notifications are created by server-side mechanisms only
 
 CREATE POLICY "notifications_update_self" ON notifications
   FOR UPDATE TO authenticated
@@ -1168,9 +1250,14 @@ CREATE POLICY "user_settings_delete_self" ON user_settings
 -- FUNCTION: handle_new_user()
 -- Creates a profile when a new user signs up via Supabase Auth
 -- Race-condition resistant: uses INSERT ... ON CONFLICT DO NOTHING
+-- SECURITY DEFINER with explicit search_path for safety
 -- ============================================================
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   INSERT INTO profiles (id, email, name)
   ON CONFLICT (id) DO NOTHING
@@ -1181,7 +1268,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger: create profile on auth user creation
 CREATE TRIGGER on_auth_user_created
@@ -1191,10 +1278,15 @@ CREATE TRIGGER on_auth_user_created
 -- ============================================================
 -- FUNCTION: assign_first_user_owner()
 -- Assigns owner role to the first user who signs up
--- Race-condition resistant: uses subquery count
+-- Race-condition resistant: uses advisory lock
+-- SECURITY DEFINER with explicit search_path for safety
 -- ============================================================
 CREATE OR REPLACE FUNCTION assign_first_user_owner()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   owner_role_id UUID;
   user_count BIGINT;
@@ -1204,10 +1296,14 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- Use advisory lock to prevent concurrent first-user race condition
+  -- Lock key: unique integer for this function
+  PERFORM pg_advisory_xact_lock(hashtext('assign_first_user_owner'));
+
   -- Get the owner role ID
   SELECT id INTO owner_role_id FROM roles WHERE name = 'owner' LIMIT 1;
 
-  -- Count existing users with roles
+  -- Count existing users with roles (re-check after acquiring lock)
   SELECT COUNT(*) INTO user_count FROM profiles WHERE role_id IS NOT NULL;
 
   -- If this is the first user with no role, assign owner
@@ -1217,7 +1313,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger: assign owner role to first user
 CREATE TRIGGER on_profile_created_assign_owner
@@ -1276,9 +1372,14 @@ CREATE TRIGGER update_user_settings_updated_at
 -- ============================================================
 -- FUNCTION: log_task_activity()
 -- Logs task changes to activities table
+-- SECURITY DEFINER with explicit search_path for safety
 -- ============================================================
 CREATE OR REPLACE FUNCTION log_task_activity()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   -- Log status changes
   IF OLD.status_id IS DISTINCT FROM NEW.status_id THEN
@@ -1326,7 +1427,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 CREATE TRIGGER on_task_updated
   AFTER UPDATE ON tasks
@@ -1339,6 +1440,8 @@ CREATE TRIGGER on_task_updated
 
 **Creates:** Seed data for all lookup tables
 
+**Note:** All inserts use `ON CONFLICT DO NOTHING` for idempotency.
+
 ```sql
 -- ============================================================
 -- ROLES
@@ -1347,7 +1450,8 @@ INSERT INTO roles (name, description, position) VALUES
   ('owner', 'Full system access. Can manage team, settings, and all content.', 1),
   ('admin', 'Can manage projects, tasks, team work, and most settings.', 2),
   ('member', 'Can create and update assigned work.', 3),
-  ('viewer', 'Read-only access.', 4);
+  ('viewer', 'Read-only access.', 4)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================
 -- TASK STATUSES
@@ -1358,7 +1462,8 @@ INSERT INTO task_statuses (name, color, position) VALUES
   ('In Progress', '#F59E0B', 3),
   ('Blocked', '#EF4444', 4),
   ('Review', '#8B5CF6', 5),
-  ('Done', '#10B981', 6);
+  ('Done', '#10B981', 6)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================
 -- TASK PRIORITIES
@@ -1367,7 +1472,8 @@ INSERT INTO task_priorities (name, color, position) VALUES
   ('Low', '#9CA3AF', 1),
   ('Medium', '#3B82F6', 2),
   ('High', '#F59E0B', 3),
-  ('Urgent', '#EF4444', 4);
+  ('Urgent', '#EF4444', 4)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================
 -- PROJECT STATUSES
@@ -1377,7 +1483,8 @@ INSERT INTO project_statuses (name, color, position) VALUES
   ('Active', '#3B82F6', 2),
   ('On Hold', '#F59E0B', 3),
   ('Completed', '#10B981', 4),
-  ('Archived', '#6B7280', 5);
+  ('Archived', '#6B7280', 5)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================
 -- DECISION STATUSES
@@ -1387,7 +1494,8 @@ INSERT INTO decision_statuses (name, color, position) VALUES
   ('Under Discussion', '#3B82F6', 2),
   ('Approved', '#10B981', 3),
   ('Rejected', '#EF4444', 4),
-  ('Superseded', '#6B7280', 5);
+  ('Superseded', '#6B7280', 5)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================
 -- DOCUMENT STATUSES
@@ -1396,7 +1504,8 @@ INSERT INTO document_statuses (name, color, position) VALUES
   ('Draft', '#9CA3AF', 1),
   ('In Review', '#3B82F6', 2),
   ('Approved', '#10B981', 3),
-  ('Archived', '#6B7280', 4);
+  ('Archived', '#6B7280', 4)
+ON CONFLICT (name) DO NOTHING;
 ```
 
 ---
