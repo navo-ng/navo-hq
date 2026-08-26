@@ -17,17 +17,25 @@ import {
   X,
 } from "lucide-react";
 import { useState, useEffect, createContext, useContext } from "react";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  roles?: string[];
+}
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/team", label: "Team", icon: Users },
+  { href: "/team", label: "Team", icon: Users, roles: ["owner", "admin"] },
   { href: "/decisions", label: "Decisions", icon: Scale },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/activity", label: "Activity", icon: Activity },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
 ];
 
 const SidebarContext = createContext<{
@@ -46,26 +54,30 @@ function NavLinks({
   pathname: string;
   onNavigate?: () => void;
 }) {
+  const { role } = useCurrentUser();
+
   return (
     <nav className="flex-1 space-y-1 p-2">
-      {navItems.map((item) => {
-        const isActive = pathname === item.href;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-              isActive
-                ? "bg-navo-blue/10 text-navo-blue"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            }`}
-          >
-            <item.icon size={18} />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
+      {navItems
+        .filter((item) => !item.roles || (role && item.roles.includes(role)))
+        .map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-navo-blue/10 text-navo-blue"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              }`}
+            >
+              <item.icon size={18} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
     </nav>
   );
 }
@@ -95,6 +107,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { mobileOpen, setMobileOpen } = useSidebar();
+  const { role } = useCurrentUser();
+
+  const visibleItems = navItems.filter(
+    (item) => !item.roles || (role && item.roles.includes(role))
+  );
 
   return (
     <>
@@ -125,7 +142,7 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 space-y-1 p-2">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

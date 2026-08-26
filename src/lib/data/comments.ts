@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { logActivity } from "./log-activity";
+import { createNotification } from "./create-notification";
 
 export interface Comment {
   id: string;
@@ -108,6 +109,31 @@ export async function createComment(
     details: { content_preview: content.slice(0, 100) },
     userId,
   });
+
+  if (entityType === "task") {
+    const { data: taskData } = await supabase
+      .from("tasks")
+      .select("owner_id, title")
+      .eq("id", entityId)
+      .single();
+    if (taskData?.owner_id && taskData.owner_id !== userId) {
+      const { data: actorProfile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", userId)
+        .single();
+      const actorName = actorProfile?.name || "Someone";
+      createNotification({
+        supabase,
+        userId: taskData.owner_id,
+        type: "comment_added",
+        title: "New comment on task",
+        message: `${actorName} commented on '${taskData.title}'`,
+        entityType: "task",
+        entityId,
+      });
+    }
+  }
 
   return mapComment(data);
 }

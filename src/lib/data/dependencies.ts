@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { logActivity } from "./log-activity";
+import { createNotification } from "./create-notification";
 
 export interface TaskDependency {
   task_id: string;
@@ -137,6 +138,23 @@ export async function addDependency(
     details: { blocked_by_id: blockedById },
     userId: userData.user?.id,
   });
+
+  const [{ data: taskData }, { data: blockedByData }] = await Promise.all([
+    supabase.from("tasks").select("owner_id, title").eq("id", taskId).single(),
+    supabase.from("tasks").select("title").eq("id", blockedById).single(),
+  ]);
+
+  if (taskData?.owner_id && userData.user?.id && taskData.owner_id !== userData.user.id) {
+    createNotification({
+      supabase,
+      userId: taskData.owner_id,
+      type: "dependency_added",
+      title: "Task dependency added",
+      message: `'${taskData.title}' is now blocked by '${blockedByData?.title || "another task"}'`,
+      entityType: "task",
+      entityId: taskId,
+    });
+  }
 }
 
 export async function removeDependency(

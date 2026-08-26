@@ -9,6 +9,7 @@ import {
   CreateTaskInput,
 } from "@/types/task";
 import { logActivity } from "./log-activity";
+import { createNotification } from "./create-notification";
 
 const TASK_SELECT = `
   *,
@@ -259,6 +260,24 @@ export async function createTask(
     userId,
   });
 
+  if (input.owner_id && input.owner_id !== userId) {
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", userId)
+      .single();
+    const actorName = actorProfile?.name || "Someone";
+    createNotification({
+      supabase,
+      userId: input.owner_id,
+      type: "task_assigned",
+      title: "New task assigned",
+      message: `${actorName} assigned you '${task.title}'`,
+      entityType: "task",
+      entityId: task.id,
+    });
+  }
+
   return mapTask(task);
 }
 
@@ -278,6 +297,12 @@ export async function updateTaskStatus(
 
   const { data: userData } = await supabase.auth.getUser();
 
+  const { data: taskData } = await supabase
+    .from("tasks")
+    .select("owner_id, title")
+    .eq("id", taskId)
+    .single();
+
   const { error } = await supabase.from("tasks").update(update).eq("id", taskId);
 
   if (error) {
@@ -293,6 +318,30 @@ export async function updateTaskStatus(
     details: { status_id: statusId },
     userId: userData.user?.id,
   });
+
+  if (taskData?.owner_id && userData.user?.id && taskData.owner_id !== userData.user.id) {
+    const { data: statusData } = await supabase
+      .from("task_statuses")
+      .select("name")
+      .eq("id", statusId)
+      .single();
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", userData.user.id)
+      .single();
+    const actorName = actorProfile?.name || "Someone";
+    const statusName = statusData?.name || statusId;
+    createNotification({
+      supabase,
+      userId: taskData.owner_id,
+      type: "task_status_changed",
+      title: "Task status updated",
+      message: `${actorName} moved '${taskData.title}' to ${statusName}`,
+      entityType: "task",
+      entityId: taskId,
+    });
+  }
 }
 
 export async function updateTaskPriority(

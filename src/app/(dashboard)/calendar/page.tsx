@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { CreateEventDialog } from "@/components/calendar/CreateEventDialog";
@@ -35,6 +35,16 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const handler = (e: MediaQueryListEvent | MediaQueryList) =>
+      setViewMode(e.matches ? "list" : "grid");
+    handler(mq);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const supabase = createClient();
   const year = currentDate.getFullYear();
@@ -143,6 +153,28 @@ export default function CalendarPage() {
           <Plus size={16} />
           New Event
         </Button>
+        <div className="flex shrink-0 items-center rounded-lg border border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-2 transition-colors ${
+              viewMode === "grid"
+                ? "bg-navo-blue text-white"
+                : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <LayoutGrid size={16} />
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-2 transition-colors ${
+              viewMode === "list"
+                ? "bg-navo-blue text-white"
+                : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -173,72 +205,106 @@ export default function CalendarPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">
-            {WEEKDAYS.map((day) => (
-              <div
-                key={day}
-                className="bg-gray-50 py-2 text-center text-xs font-medium text-gray-500 dark:bg-gray-900 dark:text-gray-400"
-              >
-                {day}
-              </div>
-            ))}
-            {calendarDays.map((day, idx) => {
-              if (day === null) {
-                return <div key={`empty-${idx}`} className="bg-white dark:bg-gray-900" />;
-              }
-              const dateKey = formatDateKey(year, month, day);
-              const dayEvents = eventsByDate[dateKey] || [];
-              const isToday = dateKey === todayStr;
-              const isSelected = dateKey === selectedDate;
-
-              return (
-                <button
-                  key={dateKey}
-                  onClick={() => setSelectedDate(dateKey)}
-                  className={`relative min-h-[48px] sm:min-h-[72px] bg-white p-1 text-left transition-colors dark:bg-gray-900 ${
-                    isSelected
-                      ? "bg-navo-blue/5 ring-1 ring-navo-blue"
-                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                  }`}
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">
+              {WEEKDAYS.map((day) => (
+                <div
+                  key={day}
+                  className="bg-gray-50 py-2 text-center text-xs font-medium text-gray-500 dark:bg-gray-900 dark:text-gray-400"
                 >
-                  <span
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                      isToday
-                        ? "bg-navo-blue text-white"
-                        : "text-gray-700 dark:text-gray-300"
+                  {day}
+                </div>
+              ))}
+              {calendarDays.map((day, idx) => {
+                if (day === null) {
+                  return <div key={`empty-${idx}`} className="bg-white dark:bg-gray-900" />;
+                }
+                const dateKey = formatDateKey(year, month, day);
+                const dayEvents = eventsByDate[dateKey] || [];
+                const isToday = dateKey === todayStr;
+                const isSelected = dateKey === selectedDate;
+
+                return (
+                  <button
+                    key={dateKey}
+                    onClick={() => setSelectedDate(dateKey)}
+                    className={`relative min-h-[48px] sm:min-h-[72px] bg-white p-1 text-left transition-colors dark:bg-gray-900 ${
+                      isSelected
+                        ? "bg-navo-blue/5 ring-1 ring-navo-blue"
+                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
                     }`}
                   >
-                    {day}
-                  </span>
-                  <div className="mt-0.5 space-y-0.5">
-                    {dayEvents.slice(0, 2).map((event) => (
-                      <div
-                        key={event.id}
-                        className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white hidden sm:block"
-                        style={{
-                          backgroundColor:
-                            event.type === "meeting"
-                              ? "#0064F0"
-                              : event.type === "deadline"
-                              ? "#EF4444"
-                              : event.type === "milestone"
-                              ? "#10B981"
-                              : "#8B5CF6",
-                        }}
-                      >
-                        {event.title}
+                    <span
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
+                        isToday
+                          ? "bg-navo-blue text-white"
+                          : "text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      {day}
+                    </span>
+                    <div className="mt-0.5 space-y-0.5">
+                      {dayEvents.slice(0, 2).map((event) => (
+                        <div
+                          key={event.id}
+                          className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white hidden sm:block"
+                          style={{
+                            backgroundColor:
+                              event.type === "meeting"
+                                ? "#0064F0"
+                                : event.type === "deadline"
+                                ? "#EF4444"
+                                : event.type === "milestone"
+                                ? "#10B981"
+                                : "#8B5CF6",
+                          }}
+                        >
+                          {event.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <span className="block text-center text-[10px] text-gray-400">
+                          +{dayEvents.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {events.length === 0 ? (
+                <p className="py-12 text-center text-sm text-gray-400">
+                  No events this month
+                </p>
+              ) : (
+                Object.keys(eventsByDate)
+                  .sort()
+                  .map((dateKey) => (
+                    <div key={dateKey}>
+                      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        {new Date(dateKey + "T00:00:00").toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </h4>
+                      <div className="space-y-2">
+                        {eventsByDate[dateKey].map((event) => (
+                          <CalendarEventCard
+                            key={event.id}
+                            event={event}
+                            onEdit={handleEditEvent}
+                            onDelete={handleDeleteEvent}
+                          />
+                        ))}
                       </div>
-                    ))}
-                    {dayEvents.length > 2 && (
-                      <span className="block text-center text-[10px] text-gray-400">
-                        +{dayEvents.length - 2} more
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                    </div>
+                  ))
+              )}
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
