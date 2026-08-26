@@ -1,8 +1,9 @@
 "use client";
 
-import { Moon, Sun, Bell, Search } from "lucide-react";
+import { Moon, Sun, Search } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 function useMounted() {
   return useSyncExternalStore(
@@ -35,9 +36,7 @@ export function Header() {
         <button className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
           <Search size={18} />
         </button>
-        <button className="relative rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
-          <Bell size={18} />
-        </button>
+        <NotificationBell />
         {mounted && (
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
