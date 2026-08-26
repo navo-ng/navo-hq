@@ -54,7 +54,7 @@ export function TaskFilters({
           <button
             key={filter.id}
             onClick={() => onQuickFilterChange(filter.id)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-lg px-3 py-2.5 text-xs font-medium transition-colors ${
               quickFilter === filter.id
                 ? "bg-navo-blue text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
@@ -76,7 +76,7 @@ export function TaskFilters({
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-sm text-gray-900 placeholder-gray-400 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-8 pr-3 text-sm text-gray-900 placeholder-gray-400 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-900 dark:text-white"
           />
         </div>
 
@@ -85,7 +85,7 @@ export function TaskFilters({
           <select
             value={statusFilter}
             onChange={(e) => onStatusFilterChange(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-navo-blue focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            className="rounded-lg border border-gray-200 bg-white px-2 py-2.5 text-xs text-gray-700 focus:border-navo-blue focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
           >
             <option value="all">All Status</option>
             {statuses.map((s) => (
@@ -98,7 +98,7 @@ export function TaskFilters({
           <select
             value={priorityFilter}
             onChange={(e) => onPriorityFilterChange(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-navo-blue focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            className="rounded-lg border border-gray-200 bg-white px-2 py-2.5 text-xs text-gray-700 focus:border-navo-blue focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
           >
             <option value="all">All Priority</option>
             {priorities.map((p) => (

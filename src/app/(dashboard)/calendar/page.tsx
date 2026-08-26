@@ -130,7 +130,7 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Calendar
@@ -139,7 +139,7 @@ export default function CalendarPage() {
             Manage your schedule and events
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
           <Plus size={16} />
           New Event
         </Button>
@@ -195,7 +195,7 @@ export default function CalendarPage() {
                 <button
                   key={dateKey}
                   onClick={() => setSelectedDate(dateKey)}
-                  className={`relative min-h-[72px] bg-white p-1 text-left transition-colors dark:bg-gray-900 ${
+                  className={`relative min-h-[48px] sm:min-h-[72px] bg-white p-1 text-left transition-colors dark:bg-gray-900 ${
                     isSelected
                       ? "bg-navo-blue/5 ring-1 ring-navo-blue"
                       : "hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -214,7 +214,7 @@ export default function CalendarPage() {
                     {dayEvents.slice(0, 2).map((event) => (
                       <div
                         key={event.id}
-                        className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white"
+                        className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white hidden sm:block"
                         style={{
                           backgroundColor:
                             event.type === "meeting"
@@ -300,6 +300,7 @@ export default function CalendarPage() {
       </div>
 
       <CreateEventDialog
+        key={editingEvent?.id || selectedDate || 'new'}
         open={createDialogOpen}
         onClose={handleCloseDialog}
         onCreate={handleCreateEvent}

@@ -16,6 +16,9 @@ import { fetchTasks, fetchTaskStatuses } from "@/lib/data/tasks";
 import { fetchProjects } from "@/lib/data/projects";
 import { Task, TaskStatusConfig } from "@/types/task";
 import { Project } from "@/types/project";
+import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
+import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
+import ProjectProgressList from "@/components/dashboard/ProjectProgressList";
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -225,76 +228,12 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Active Projects
-            </h2>
-            <Link
-              href="/projects"
-              className="flex items-center gap-1 text-xs font-medium text-navo-blue hover:underline"
-            >
-              View all <ArrowRight size={12} />
-            </Link>
-          </div>
-          {projects.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No projects yet.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {projects.slice(0, 4).map((project) => {
-                const stats = project.task_stats;
-                const hasTasks = stats && stats.total > 0;
-                const pct = hasTasks
-                  ? Math.round(((stats?.done || 0) / (stats?.total || 1)) * 100)
-                  : 0;
-                return (
-                  <Link
-                    key={project.id}
-                    href={`/projects/${project.id}`}
-                    className="block rounded-lg border border-gray-100 p-3 transition-colors hover:border-gray-200 dark:border-gray-800 dark:hover:border-gray-700"
-                  >
-                    <div className="mb-1 flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {project.name}
-                      </p>
-                      {project.status && (
-                        <span
-                          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                          style={{
-                            backgroundColor: `${project.status.color}20`,
-                            color: project.status.color,
-                          }}
-                        >
-                          {project.status.name}
-                        </span>
-                      )}
-                    </div>
-                    {hasTasks ? (
-                      <div className="mt-1.5">
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span>
-                            {stats?.done}/{stats?.total} tasks
-                          </span>
-                          <span>{pct}%</span>
-                        </div>
-                        <div className="mt-1 h-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                          <div
-                            className="h-full rounded-full bg-navo-green"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="mt-1 text-xs text-gray-400">No tasks yet</p>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <ProjectProgressList projects={projects} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <TaskStatusChart tasks={tasks} />
+        <TaskPriorityChart tasks={tasks} />
       </div>
 
       {(overdue.length > 0 || dueToday.length > 0) && (

@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Task, TaskStatusConfig } from "@/types/task";
-import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check } from "lucide-react";
+import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert } from "lucide-react";
+import { CommentThread } from "@/components/comments/CommentThread";
+import { TaskDependencySection } from "./TaskDependencySection";
 
 interface TaskDetailDrawerProps {
   task: Task | null;
@@ -77,7 +79,7 @@ export function TaskDetailDrawer({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
               <User size={14} className="text-gray-400" />
@@ -181,9 +183,15 @@ export function TaskDetailDrawer({
             <MessageSquare size={14} />
             Comments
           </div>
-          <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-400 dark:bg-gray-800/50">
-            Comments will appear here once the database is connected.
+          <CommentThread entityType="task" entityId={task.id} />
+        </div>
+
+        <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <ShieldAlert size={14} />
+            Dependencies
           </div>
+          <TaskDependencySection taskId={task.id} />
         </div>
       </div>
     </Drawer>

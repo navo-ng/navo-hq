@@ -41,22 +41,22 @@ export function Drawer({
         onClick={onClose}
       />
       <div
-        className={`relative z-10 h-full w-full max-w-lg border-l border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 ${
+        className={`relative z-10 h-full w-full sm:max-w-lg border-l border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 ${
           side === "left" ? "order-first border-r border-l-0" : ""
         }`}
       >
-        <div className="flex h-14 items-center justify-between border-b border-gray-200 px-6 dark:border-gray-800">
+        <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4 sm:px-6 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <X size={18} />
           </button>
         </div>
-        <div className="overflow-y-auto p-6" style={{ height: "calc(100vh - 56px)" }}>
+        <div className="overflow-y-auto p-4 sm:p-6" style={{ height: "calc(100vh - 56px)" }}>
           {children}
         </div>
       </div>

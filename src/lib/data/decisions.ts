@@ -5,6 +5,7 @@ import {
   DecisionUser,
   CreateDecisionInput,
 } from "@/types/decision";
+import { logActivity } from "./log-activity";
 
 const DECISION_SELECT = `
   *,
@@ -266,6 +267,15 @@ export async function createDecision(
     }
   }
 
+  logActivity({
+    supabase,
+    action: "create",
+    entityType: "decision",
+    entityId: decision.id,
+    entityName: decision.title,
+    userId,
+  });
+
   return mapDecision(decision);
 }
 
@@ -301,6 +311,14 @@ export async function updateDecision(
     return null;
   }
 
+  logActivity({
+    supabase,
+    action: "update",
+    entityType: "decision",
+    entityId: decisionId,
+    entityName: data.title,
+  });
+
   return mapDecision(data);
 }
 
@@ -308,6 +326,8 @@ export async function archiveDecision(
   supabase: SupabaseClient,
   decisionId: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("decisions")
     .update({ is_archived: true })
@@ -316,6 +336,15 @@ export async function archiveDecision(
   if (error) {
     console.error("Error archiving decision:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "archive",
+    entityType: "decision",
+    entityId: decisionId,
+    entityName: "decision",
+    userId: userData.user?.id,
+  });
 }
 
 export async function fetchAllUsers(

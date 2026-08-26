@@ -6,57 +6,52 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
+  Decision,
   DecisionUser,
   DecisionStatusConfig,
 } from "@/types/decision";
+import { updateDecision } from "@/lib/data/decisions";
+import { createClient } from "@/lib/supabase/client";
 
-interface CreateDecisionDialogProps {
+interface EditDecisionDialogProps {
+  decision: Decision;
   open: boolean;
   onClose: () => void;
-  onCreate: (decision: {
-    title: string;
-    topic: string;
-    context: string;
-    proposed_decision: string;
-    decision_text: string;
-    reason: string;
-    alternatives: string;
-    owner_id: string;
-    project_id: string;
-    status_id: string;
-    contributor_ids: string[];
-    tag_ids: string[];
-  }) => void;
+  onUpdated: () => void;
   users: DecisionUser[];
   statuses: DecisionStatusConfig[];
   projects: { id: string; name: string }[];
   tags: { id: string; name: string; color: string }[];
+  key?: string;
 }
 
-export function CreateDecisionDialog({
+export function EditDecisionDialog({
+  decision,
   open,
   onClose,
-  onCreate,
+  onUpdated,
   users,
   statuses,
   projects,
   tags,
-}: CreateDecisionDialogProps) {
-  const [title, setTitle] = useState("");
-  const [topic, setTopic] = useState("");
-  const [context, setContext] = useState("");
-  const [proposedDecision, setProposedDecision] = useState("");
-  const [decisionText, setDecisionText] = useState("");
-  const [reason, setReason] = useState("");
-  const [alternatives, setAlternatives] = useState("");
-  const [ownerId, setOwnerId] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [statusId, setStatusId] = useState("");
-  const [selectedContributors, setSelectedContributors] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+}: EditDecisionDialogProps) {
+  const supabase = createClient();
+  const [title, setTitle] = useState(decision.title);
+  const [topic, setTopic] = useState(decision.topic || "");
+  const [context, setContext] = useState(decision.context || "");
+  const [proposedDecision, setProposedDecision] = useState(decision.proposed_decision || "");
+  const [decisionText, setDecisionText] = useState(decision.decision_text || "");
+  const [reason, setReason] = useState(decision.reason || "");
+  const [alternatives, setAlternatives] = useState(decision.alternatives || "");
+  const [ownerId, setOwnerId] = useState(decision.owner_id || "");
+  const [projectId, setProjectId] = useState(decision.project_id || "");
+  const [statusId, setStatusId] = useState(decision.status_id);
+  const [selectedContributors, setSelectedContributors] = useState<string[]>(decision.contributors?.map((c) => c.user.id) || []);
+  const [selectedTags, setSelectedTags] = useState<string[]>(decision.tags?.map((t) => t.id) || []);
   const [errors, setErrors] = useState<{ title?: string }>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim()) {
       setErrors({ title: "Decision title is required" });
       return;
@@ -66,39 +61,28 @@ export function CreateDecisionDialog({
       return;
     }
 
-    onCreate({
-      title: title.trim(),
-      topic: topic.trim(),
-      context: context.trim(),
-      proposed_decision: proposedDecision.trim(),
-      decision_text: decisionText.trim(),
-      reason: reason.trim(),
-      alternatives: alternatives.trim(),
-      owner_id: ownerId,
-      project_id: projectId,
-      status_id: statusId,
-      contributor_ids: selectedContributors,
-      tag_ids: selectedTags,
-    });
+    setIsSaving(true);
+    try {
+      const updated = await updateDecision(supabase, decision.id, {
+        title: title.trim(),
+        topic: topic.trim() || undefined,
+        context: context.trim() || undefined,
+        proposed_decision: proposedDecision.trim() || undefined,
+        decision_text: decisionText.trim() || undefined,
+        reason: reason.trim() || undefined,
+        alternatives: alternatives.trim() || undefined,
+        owner_id: ownerId || undefined,
+        project_id: projectId || undefined,
+        status_id: statusId,
+      });
 
-    resetForm();
-    onClose();
-  };
-
-  const resetForm = () => {
-    setTitle("");
-    setTopic("");
-    setContext("");
-    setProposedDecision("");
-    setDecisionText("");
-    setReason("");
-    setAlternatives("");
-    setOwnerId("");
-    setProjectId("");
-    setStatusId("");
-    setSelectedContributors([]);
-    setSelectedTags([]);
-    setErrors({});
+      if (updated) {
+        onUpdated();
+        onClose();
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleContributor = (userId: string) => {
@@ -118,7 +102,7 @@ export function CreateDecisionDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="Create Decision" maxWidth="lg">
+    <Dialog open={open} onClose={onClose} title="Edit Decision" maxWidth="lg">
       <div className="space-y-4">
         <Input
           label="Decision Title"
@@ -291,7 +275,9 @@ export function CreateDecisionDialog({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Create Decision</Button>
+          <Button onClick={handleSubmit} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </div>
     </Dialog>

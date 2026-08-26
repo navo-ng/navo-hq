@@ -138,7 +138,7 @@ export default function TagsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Tags
@@ -147,7 +147,7 @@ export default function TagsPage() {
             Manage tags for tasks, projects, and documents
           </p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="shrink-0">
           <Plus size={16} />
           New Tag
         </Button>
@@ -183,6 +183,7 @@ export default function TagsPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <div className="overflow-x-auto rounded-lg border">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-800">
@@ -235,6 +236,7 @@ export default function TagsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

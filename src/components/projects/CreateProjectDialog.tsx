@@ -130,7 +130,7 @@ export function CreateProjectDialog({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Owner"
             value={ownerId}
@@ -147,7 +147,7 @@ export function CreateProjectDialog({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Start Date"
             type="date"

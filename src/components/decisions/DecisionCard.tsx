@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { Decision } from "@/types/decision";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users } from "lucide-react";
+import { Calendar, Users, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 interface DecisionCardProps {
   decision: Decision;
+  onEdit: (decision: Decision) => void;
+  onDelete: (decision: Decision) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -17,8 +20,21 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export function DecisionCard({ decision }: DecisionCardProps) {
+export function DecisionCard({ decision, onEdit, onDelete }: DecisionCardProps) {
   const contributorCount = decision.contributors?.length || 0;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
@@ -33,9 +49,43 @@ export function DecisionCard({ decision }: DecisionCardProps) {
             </p>
           )}
         </div>
-        {decision.status && (
-          <Badge color={decision.status.color}>{decision.status.name}</Badge>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {decision.status && (
+            <Badge color={decision.status.color}>{decision.status.name}</Badge>
+          )}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onEdit(decision);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  <Pencil size={14} />
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDelete(decision);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {decision.context && (

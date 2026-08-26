@@ -8,6 +8,7 @@ import {
   TaskPriorityConfig,
   CreateTaskInput,
 } from "@/types/task";
+import { logActivity } from "./log-activity";
 
 const TASK_SELECT = `
   *,
@@ -249,6 +250,15 @@ export async function createTask(
     }
   }
 
+  logActivity({
+    supabase,
+    action: "create",
+    entityType: "task",
+    entityId: task.id,
+    entityName: task.title,
+    userId,
+  });
+
   return mapTask(task);
 }
 
@@ -266,11 +276,23 @@ export async function updateTaskStatus(
     update.completed_at = null;
   }
 
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase.from("tasks").update(update).eq("id", taskId);
 
   if (error) {
     console.error("Error updating task status:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "status_change",
+    entityType: "task",
+    entityId: taskId,
+    entityName: "task",
+    details: { status_id: statusId },
+    userId: userData.user?.id,
+  });
 }
 
 export async function updateTaskPriority(
@@ -278,6 +300,8 @@ export async function updateTaskPriority(
   taskId: string,
   priorityId: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("tasks")
     .update({ priority_id: priorityId })
@@ -286,12 +310,24 @@ export async function updateTaskPriority(
   if (error) {
     console.error("Error updating task priority:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "update",
+    entityType: "task",
+    entityId: taskId,
+    entityName: "task",
+    details: { priority_id: priorityId },
+    userId: userData.user?.id,
+  });
 }
 
 export async function archiveTask(
   supabase: SupabaseClient,
   taskId: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("tasks")
     .update({ is_archived: true })
@@ -300,6 +336,15 @@ export async function archiveTask(
   if (error) {
     console.error("Error archiving task:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "archive",
+    entityType: "task",
+    entityId: taskId,
+    entityName: "task",
+    userId: userData.user?.id,
+  });
 }
 
 export async function fetchUsers(

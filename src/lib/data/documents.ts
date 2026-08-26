@@ -5,6 +5,7 @@ import {
   DocumentVersion,
   CreateDocumentInput,
 } from "@/types/document";
+import { logActivity } from "./log-activity";
 
 const DOCUMENT_SELECT = `
   *,
@@ -240,6 +241,15 @@ export async function createDocument(
     }
   }
 
+  logActivity({
+    supabase,
+    action: "create",
+    entityType: "document",
+    entityId: document.id,
+    entityName: document.title,
+    userId,
+  });
+
   return mapDocument(document);
 }
 
@@ -268,6 +278,14 @@ export async function updateDocument(
     return null;
   }
 
+  logActivity({
+    supabase,
+    action: "update",
+    entityType: "document",
+    entityId: documentId,
+    entityName: data.title,
+  });
+
   return mapDocument(data);
 }
 
@@ -275,6 +293,8 @@ export async function archiveDocument(
   supabase: SupabaseClient,
   documentId: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("documents")
     .update({ is_archived: true })
@@ -283,6 +303,15 @@ export async function archiveDocument(
   if (error) {
     console.error("Error archiving document:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "archive",
+    entityType: "document",
+    entityId: documentId,
+    entityName: "document",
+    userId: userData.user?.id,
+  });
 }
 
 export async function addDocumentVersion(

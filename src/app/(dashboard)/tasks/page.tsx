@@ -218,7 +218,7 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Tasks
@@ -227,7 +227,7 @@ export default function TasksPage() {
             Track and manage all team tasks
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
           <Plus size={16} />
           New Task
         </Button>

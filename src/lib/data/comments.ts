@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { logActivity } from "./log-activity";
 
 export interface Comment {
   id: string;
@@ -97,6 +98,16 @@ export async function createComment(
     console.error("Error creating comment:", error);
     return null;
   }
+
+  logActivity({
+    supabase,
+    action: "comment",
+    entityType: entityType as "task" | "project" | "decision" | "document" | "event" | "comment" | "tag",
+    entityId,
+    entityName: "comment",
+    details: { content_preview: content.slice(0, 100) },
+    userId,
+  });
 
   return mapComment(data);
 }

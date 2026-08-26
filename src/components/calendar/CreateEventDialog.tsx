@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -14,6 +14,7 @@ interface CreateEventDialogProps {
   onUpdate?: (eventId: string, input: UpdateCalendarEventInput) => void;
   editingEvent?: CalendarEvent | null;
   selectedDate?: string;
+  key?: string;
 }
 
 const EVENT_TYPES = [
@@ -32,31 +33,14 @@ export function CreateEventDialog({
   editingEvent,
   selectedDate,
 }: CreateEventDialogProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [eventTime, setEventTime] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [type, setType] = useState("event");
+  const [title, setTitle] = useState(editingEvent?.title || "");
+  const [description, setDescription] = useState(editingEvent?.description || "");
+  const [eventDate, setEventDate] = useState(editingEvent?.event_date || selectedDate || "");
+  const [eventTime, setEventTime] = useState(editingEvent?.event_time || "");
+  const [endDate, setEndDate] = useState(editingEvent?.end_date || "");
+  const [endTime, setEndTime] = useState(editingEvent?.end_time || "");
+  const [type, setType] = useState(editingEvent?.type || "event");
   const [errors, setErrors] = useState<{ title?: string; event_date?: string }>({});
-
-  useEffect(() => {
-    if (editingEvent) {
-      setTitle(editingEvent.title);
-      setDescription(editingEvent.description || "");
-      setEventDate(editingEvent.event_date);
-      setEventTime(editingEvent.event_time || "");
-      setEndDate(editingEvent.end_date || "");
-      setEndTime(editingEvent.end_time || "");
-      setType(editingEvent.type);
-    } else {
-      resetForm();
-      if (selectedDate) {
-        setEventDate(selectedDate);
-      }
-    }
-  }, [editingEvent, selectedDate, open]);
 
   const resetForm = () => {
     setTitle("");
@@ -145,7 +129,7 @@ export function CreateEventDialog({
           options={EVENT_TYPES}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Start Date"
             type="date"
@@ -164,7 +148,7 @@ export function CreateEventDialog({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="End Date"
             type="date"

@@ -7,6 +7,7 @@ import {
   CreateProjectInput,
   UpdateProjectInput,
 } from "@/types/project";
+import { logActivity } from "./log-activity";
 
 const PROJECT_SELECT = `
   *,
@@ -330,6 +331,15 @@ export async function createProject(
     }
   }
 
+  logActivity({
+    supabase,
+    action: "create",
+    entityType: "project",
+    entityId: project.id,
+    entityName: project.name,
+    userId,
+  });
+
   return mapProject(project);
 }
 
@@ -358,6 +368,14 @@ export async function updateProject(
     return null;
   }
 
+  logActivity({
+    supabase,
+    action: "update",
+    entityType: "project",
+    entityId: projectId,
+    entityName: data.name,
+  });
+
   return mapProject(data);
 }
 
@@ -365,6 +383,8 @@ export async function archiveProject(
   supabase: SupabaseClient,
   projectId: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("projects")
     .update({ is_archived: true })
@@ -373,6 +393,15 @@ export async function archiveProject(
   if (error) {
     console.error("Error archiving project:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "archive",
+    entityType: "project",
+    entityId: projectId,
+    entityName: "project",
+    userId: userData.user?.id,
+  });
 }
 
 export async function addProjectMember(

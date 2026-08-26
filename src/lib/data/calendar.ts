@@ -4,6 +4,7 @@ import {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
 } from "@/types/calendar";
+import { logActivity } from "./log-activity";
 
 function mapEvent(row: Record<string, unknown>): CalendarEvent {
   return {
@@ -106,6 +107,15 @@ export async function createEvent(
     return null;
   }
 
+  logActivity({
+    supabase,
+    action: "create",
+    entityType: "event",
+    entityId: data.id,
+    entityName: data.title,
+    userId,
+  });
+
   return mapEvent(data);
 }
 
@@ -137,6 +147,14 @@ export async function updateEvent(
     return null;
   }
 
+  logActivity({
+    supabase,
+    action: "update",
+    entityType: "event",
+    entityId: eventId,
+    entityName: data.title,
+  });
+
   return mapEvent(data);
 }
 
@@ -144,6 +162,8 @@ export async function deleteEvent(
   supabase: SupabaseClient,
   eventId: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("calendar_events")
     .update({ is_archived: true })
@@ -152,4 +172,13 @@ export async function deleteEvent(
   if (error) {
     console.error("Error deleting calendar event:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "archive",
+    entityType: "event",
+    entityId: eventId,
+    entityName: "event",
+    userId: userData.user?.id,
+  });
 }

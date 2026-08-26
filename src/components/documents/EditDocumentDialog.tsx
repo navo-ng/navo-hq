@@ -5,45 +5,44 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { DocumentStatusConfig, DocumentUser } from "@/types/document";
+import { DocDocument, DocumentStatusConfig, DocumentUser } from "@/types/document";
+import { updateDocument } from "@/lib/data/documents";
+import { createClient } from "@/lib/supabase/client";
 
-interface CreateDocumentDialogProps {
+interface EditDocumentDialogProps {
+  document: DocDocument;
   open: boolean;
   onClose: () => void;
-  onCreate: (document: {
-    title: string;
-    description: string;
-    category: string;
-    owner_id: string;
-    project_id: string;
-    status_id: string;
-    tag_ids: string[];
-  }) => void;
+  onUpdated: () => void;
   users: DocumentUser[];
   statuses: DocumentStatusConfig[];
   tags: { id: string; name: string; color: string }[];
   projects: { id: string; name: string }[];
+  key?: string;
 }
 
-export function CreateDocumentDialog({
+export function EditDocumentDialog({
+  document: doc,
   open,
   onClose,
-  onCreate,
+  onUpdated,
   users,
   statuses,
   tags,
   projects,
-}: CreateDocumentDialogProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [ownerId, setOwnerId] = useState("");
-  const [statusId, setStatusId] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+}: EditDocumentDialogProps) {
+  const supabase = createClient();
+  const [title, setTitle] = useState(doc.title);
+  const [description, setDescription] = useState(doc.description || "");
+  const [category, setCategory] = useState(doc.category || "");
+  const [ownerId, setOwnerId] = useState(doc.owner_id);
+  const [statusId, setStatusId] = useState(doc.status_id);
+  const [projectId, setProjectId] = useState(doc.project_id || "");
+  const [selectedTags, setSelectedTags] = useState<string[]>(doc.tags?.map((t) => t.id) || []);
   const [errors, setErrors] = useState<{ title?: string }>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim()) {
       setErrors({ title: "Document title is required" });
       return;
@@ -57,29 +56,24 @@ export function CreateDocumentDialog({
       return;
     }
 
-    onCreate({
-      title: title.trim(),
-      description: description.trim(),
-      category: category.trim(),
-      owner_id: ownerId,
-      project_id: projectId,
-      status_id: statusId,
-      tag_ids: selectedTags,
-    });
+    setIsSaving(true);
+    try {
+      const updated = await updateDocument(supabase, doc.id, {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        category: category.trim() || undefined,
+        owner_id: ownerId,
+        project_id: projectId || undefined,
+        status_id: statusId,
+      });
 
-    resetForm();
-    onClose();
-  };
-
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setCategory("");
-    setOwnerId("");
-    setStatusId("");
-    setProjectId("");
-    setSelectedTags([]);
-    setErrors({});
+      if (updated) {
+        onUpdated();
+        onClose();
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleTag = (tagId: string) => {
@@ -91,7 +85,7 @@ export function CreateDocumentDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="Create Document" maxWidth="lg">
+    <Dialog open={open} onClose={onClose} title="Edit Document" maxWidth="lg">
       <div className="space-y-4">
         <Input
           label="Document Title"
@@ -182,7 +176,9 @@ export function CreateDocumentDialog({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Create Document</Button>
+          <Button onClick={handleSubmit} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </div>
     </Dialog>

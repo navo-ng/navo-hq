@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { DocumentCard } from "@/components/documents/DocumentCard";
 import { DocumentFilters } from "@/components/documents/DocumentFilters";
 import { CreateDocumentDialog } from "@/components/documents/CreateDocumentDialog";
+import { EditDocumentDialog } from "@/components/documents/EditDocumentDialog";
+import { DeleteDocumentDialog } from "@/components/documents/DeleteDocumentDialog";
 import { DocDocument, DocumentStatusConfig, DocumentUser } from "@/types/document";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -27,6 +29,8 @@ export default function DocumentsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<DocDocument | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState<DocDocument | null>(null);
 
   const supabase = createClient();
 
@@ -129,6 +133,11 @@ export default function DocumentsPage() {
     };
   }, [documents]);
 
+  const refetchDocuments = async () => {
+    const data = await fetchDocuments(supabase, { sort: "newest" });
+    setDocuments(data);
+  };
+
   const handleCreateDocument = async (input: {
     title: string;
     description: string;
@@ -187,7 +196,7 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Documents
@@ -197,7 +206,7 @@ export default function DocumentsPage() {
           </p>
         </div>
         {documents.length > 0 && (
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
             <Plus size={16} />
             New Document
           </Button>
@@ -299,7 +308,12 @@ export default function DocumentsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredDocuments.map((doc) => (
-                <DocumentCard key={doc.id} document={doc} />
+                <DocumentCard
+                  key={doc.id}
+                  document={doc}
+                  onEdit={setEditingDocument}
+                  onDelete={setDeletingDocument}
+                />
               ))}
             </div>
           )}
@@ -315,6 +329,29 @@ export default function DocumentsPage() {
         tags={tags}
         projects={projects}
       />
+
+      {editingDocument && (
+        <EditDocumentDialog
+          key={editingDocument.id}
+          document={editingDocument}
+          open={!!editingDocument}
+          onClose={() => setEditingDocument(null)}
+          onUpdated={refetchDocuments}
+          users={users}
+          statuses={statuses}
+          tags={tags}
+          projects={projects}
+        />
+      )}
+
+      {deletingDocument && (
+        <DeleteDocumentDialog
+          document={deletingDocument}
+          open={!!deletingDocument}
+          onClose={() => setDeletingDocument(null)}
+          onDeleted={refetchDocuments}
+        />
+      )}
     </div>
   );
 }

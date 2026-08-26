@@ -1,15 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, Check, CheckCheck } from "lucide-react";
-import { Notification } from "@/lib/data/notifications";
-import { createClient } from "@/lib/supabase/client";
-import {
-  fetchNotifications,
-  fetchUnreadCount,
-  markAsRead,
-  markAllRead,
-} from "@/lib/data/notifications";
+import { Bell, CheckCheck } from "lucide-react";
+import { useRealtimeNotifications } from "@/lib/hooks/useRealtimeNotifications";
 
 function formatTimeAgo(dateStr: string): string {
   const now = new Date();
@@ -28,54 +21,10 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export function NotificationBell() {
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useRealtimeNotifications();
   const [isOpen, setIsOpen] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const supabase = createClient();
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid || cancelled) return;
-
-      setUserId(uid);
-      const count = await fetchUnreadCount(supabase, uid);
-      if (!cancelled) setUnreadCount(count);
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = supabase
-      .channel("notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          setUnreadCount((prev) => prev + 1);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, userId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -87,33 +36,10 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleToggle = async () => {
-    if (!isOpen && userId) {
-      const data = await fetchNotifications(supabase, userId, { limit: 20 });
-      setNotifications(data);
-    }
-    setIsOpen(!isOpen);
-  };
-
-  const handleMarkAsRead = async (notificationId: string) => {
-    await markAsRead(supabase, notificationId);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-  };
-
-  const handleMarkAllRead = async () => {
-    if (!userId) return;
-    await markAllRead(supabase, userId);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-  };
-
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={handleToggle}
+        onClick={() => setIsOpen(!isOpen)}
         className="relative rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
       >
         <Bell size={18} />
@@ -132,7 +58,7 @@ export function NotificationBell() {
             </h3>
             {unreadCount > 0 && (
               <button
-                onClick={handleMarkAllRead}
+                onClick={markAllAsRead}
                 className="flex items-center gap-1 text-xs text-navo-blue hover:text-navo-deep"
               >
                 <CheckCheck size={14} />
@@ -150,7 +76,7 @@ export function NotificationBell() {
               notifications.map((notification) => (
                 <button
                   key={notification.id}
-                  onClick={() => handleMarkAsRead(notification.id)}
+                  onClick={() => markAsRead(notification.id)}
                   className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
                     !notification.is_read ? "bg-navo-blue/5" : ""
                   }`}

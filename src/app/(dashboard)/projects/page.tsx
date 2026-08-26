@@ -178,7 +178,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Projects
@@ -188,7 +188,7 @@ export default function ProjectsPage() {
           </p>
         </div>
         {projects.length > 0 && (
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
             <Plus size={16} />
             New Project
           </Button>

@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { logActivity } from "./log-activity";
 
 export interface TaskDependency {
   task_id: string;
@@ -114,6 +115,8 @@ export async function addDependency(
     return;
   }
 
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("task_dependencies")
     .insert({
@@ -124,6 +127,16 @@ export async function addDependency(
   if (error) {
     console.error("Error adding task dependency:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "assign",
+    entityType: "task",
+    entityId: taskId,
+    entityName: "dependency",
+    details: { blocked_by_id: blockedById },
+    userId: userData.user?.id,
+  });
 }
 
 export async function removeDependency(
@@ -131,6 +144,8 @@ export async function removeDependency(
   taskId: string,
   blockedById: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("task_dependencies")
     .delete()
@@ -140,4 +155,14 @@ export async function removeDependency(
   if (error) {
     console.error("Error removing task dependency:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "delete",
+    entityType: "task",
+    entityId: taskId,
+    entityName: "dependency",
+    details: { blocked_by_id: blockedById },
+    userId: userData.user?.id,
+  });
 }

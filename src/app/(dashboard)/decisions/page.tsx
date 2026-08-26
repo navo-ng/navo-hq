@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { DecisionCard } from "@/components/decisions/DecisionCard";
 import { DecisionFilters } from "@/components/decisions/DecisionFilters";
 import { CreateDecisionDialog } from "@/components/decisions/CreateDecisionDialog";
+import { EditDecisionDialog } from "@/components/decisions/EditDecisionDialog";
+import { DeleteDecisionDialog } from "@/components/decisions/DeleteDecisionDialog";
 import { Decision, DecisionUser, DecisionStatusConfig } from "@/types/decision";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -29,6 +31,8 @@ export default function DecisionsPage() {
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingDecision, setEditingDecision] = useState<Decision | null>(null);
+  const [deletingDecision, setDeletingDecision] = useState<Decision | null>(null);
 
   const supabase = createClient();
 
@@ -127,6 +131,11 @@ export default function DecisionsPage() {
     return result;
   }, [decisions]);
 
+  const refetchDecisions = async () => {
+    const data = await fetchDecisions(supabase, { sort: "newest" });
+    setDecisions(data);
+  };
+
   const handleCreateDecision = async (input: {
     title: string;
     topic: string;
@@ -182,7 +191,7 @@ export default function DecisionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Decisions
@@ -192,7 +201,7 @@ export default function DecisionsPage() {
           </p>
         </div>
         {decisions.length > 0 && (
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
             <Plus size={16} />
             New Decision
           </Button>
@@ -251,7 +260,12 @@ export default function DecisionsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDecisions.map((decision) => (
-            <DecisionCard key={decision.id} decision={decision} />
+            <DecisionCard
+              key={decision.id}
+              decision={decision}
+              onEdit={setEditingDecision}
+              onDelete={setDeletingDecision}
+            />
           ))}
         </div>
       )}
@@ -265,6 +279,29 @@ export default function DecisionsPage() {
         projects={projects}
         tags={tags}
       />
+
+      {editingDecision && (
+        <EditDecisionDialog
+          key={editingDecision.id}
+          decision={editingDecision}
+          open={!!editingDecision}
+          onClose={() => setEditingDecision(null)}
+          onUpdated={refetchDecisions}
+          users={users}
+          statuses={statuses}
+          projects={projects}
+          tags={tags}
+        />
+      )}
+
+      {deletingDecision && (
+        <DeleteDecisionDialog
+          decision={deletingDecision}
+          open={!!deletingDecision}
+          onClose={() => setDeletingDecision(null)}
+          onDeleted={refetchDecisions}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Tag } from "@/types/index";
+import { logActivity } from "./log-activity";
 
 function mapTag(row: Record<string, unknown>): Tag {
   return {
@@ -78,6 +79,14 @@ export async function createTag(
     return null;
   }
 
+  logActivity({
+    supabase,
+    action: "create",
+    entityType: "tag",
+    entityId: data.id,
+    entityName: data.name,
+  });
+
   return mapTag(data);
 }
 
@@ -103,6 +112,14 @@ export async function updateTag(
     return null;
   }
 
+  logActivity({
+    supabase,
+    action: "update",
+    entityType: "tag",
+    entityId: tagId,
+    entityName: data.name,
+  });
+
   return mapTag(data);
 }
 
@@ -110,6 +127,8 @@ export async function deleteTag(
   supabase: SupabaseClient,
   tagId: string
 ): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+
   await supabase.from("task_tags").delete().eq("tag_id", tagId);
   await supabase.from("project_tags").delete().eq("tag_id", tagId);
   await supabase.from("decision_tags").delete().eq("tag_id", tagId);
@@ -123,6 +142,15 @@ export async function deleteTag(
   if (error) {
     console.error("Error deleting tag:", error);
   }
+
+  logActivity({
+    supabase,
+    action: "delete",
+    entityType: "tag",
+    entityId: tagId,
+    entityName: "tag",
+    userId: userData.user?.id,
+  });
 }
 
 export async function fetchTagCategories(
