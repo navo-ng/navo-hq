@@ -5,8 +5,13 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { TaskStatus, TaskPriority, TASK_STATUSES, TASK_PRIORITIES } from "@/types/task";
-import { getMockUsers, getMockProjects, getMockTags } from "@/lib/mock-data";
+import {
+  TaskUser,
+  TaskProject,
+  TaskTag,
+  TaskStatusConfig,
+  TaskPriorityConfig,
+} from "@/types/task";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -16,31 +21,49 @@ interface CreateTaskDialogProps {
     description: string;
     owner_id: string;
     project_id: string;
-    status_id: TaskStatus;
-    priority_id: TaskPriority;
+    status_id: string;
+    priority_id: string;
     due_date: string;
     tag_ids: string[];
   }) => void;
+  users: TaskUser[];
+  projects: TaskProject[];
+  tags: TaskTag[];
+  statuses: TaskStatusConfig[];
+  priorities: TaskPriorityConfig[];
 }
 
-export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogProps) {
+export function CreateTaskDialog({
+  open,
+  onClose,
+  onCreate,
+  users,
+  projects,
+  tags,
+  statuses,
+  priorities,
+}: CreateTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [ownerId, setOwnerId] = useState("");
   const [projectId, setProjectId] = useState("");
-  const [statusId, setStatusId] = useState<TaskStatus>("todo");
-  const [priorityId, setPriorityId] = useState<TaskPriority>("medium");
+  const [statusId, setStatusId] = useState("");
+  const [priorityId, setPriorityId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ title?: string }>({});
 
-  const users = getMockUsers();
-  const projects = getMockProjects();
-  const tags = getMockTags();
-
   const handleSubmit = () => {
     if (!title.trim()) {
       setErrors({ title: "Title is required" });
+      return;
+    }
+
+    if (!statusId) {
+      return;
+    }
+
+    if (!priorityId) {
       return;
     }
 
@@ -64,8 +87,8 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
     setDescription("");
     setOwnerId("");
     setProjectId("");
-    setStatusId("todo");
-    setPriorityId("medium");
+    setStatusId("");
+    setPriorityId("");
     setDueDate("");
     setSelectedTags([]);
     setErrors({});
@@ -125,14 +148,16 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
           <Select
             label="Status"
             value={statusId}
-            onChange={(e) => setStatusId(e.target.value as TaskStatus)}
-            options={TASK_STATUSES.map((s) => ({ value: s.id, label: s.name }))}
+            onChange={(e) => setStatusId(e.target.value)}
+            placeholder="Select status"
+            options={statuses.map((s) => ({ value: s.id, label: s.name }))}
           />
           <Select
             label="Priority"
             value={priorityId}
-            onChange={(e) => setPriorityId(e.target.value as TaskPriority)}
-            options={TASK_PRIORITIES.map((p) => ({ value: p.id, label: p.name }))}
+            onChange={(e) => setPriorityId(e.target.value)}
+            placeholder="Select priority"
+            options={priorities.map((p) => ({ value: p.id, label: p.name }))}
           />
           <Input
             label="Due Date"

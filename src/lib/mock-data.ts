@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file contains mock data for development only.
+ * All data should be fetched from Supabase in production.
+ * See src/lib/data/tasks.ts for the live data access layer.
+ */
 import { Task, TaskUser, TaskProject, TaskTag } from "@/types/task";
 
 const MOCK_USERS: TaskUser[] = [

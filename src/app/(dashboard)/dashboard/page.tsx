@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import {
   CheckSquare,
   FolderKanban,
@@ -10,36 +11,90 @@ import {
   Calendar,
   User,
 } from "lucide-react";
-import { getMockTasks } from "@/lib/mock-data";
-import { getStatusConfig } from "@/types/task";
+import { createClient } from "@/lib/supabase/client";
+import { fetchTasks, fetchTaskStatuses } from "@/lib/data/tasks";
+import { Task, TaskStatusConfig } from "@/types/task";
 
 export default function DashboardPage() {
-  const tasks = getMockTasks();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [statuses, setStatuses] = useState<TaskStatusConfig[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function load() {
+      const [taskData, statusData] = await Promise.all([
+        fetchTasks(supabase),
+        fetchTaskStatuses(supabase),
+      ]);
+      setTasks(taskData);
+      setStatuses(statusData);
+      setIsLoading(false);
+    }
+    load();
+  }, [supabase]);
+
+  const getStatusColor = (statusId: string): string => {
+    const s = statuses.find((st) => st.id === statusId);
+    return s?.color || "#9CA3AF";
+  };
+
+  const getStatusName = (statusId: string): string => {
+    const s = statuses.find((st) => st.id === statusId);
+    return s?.name || "Unknown";
+  };
+
+  const getDoneId = (): string => {
+    return statuses.find((s) => s.name === "Done")?.id || "";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Dashboard
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            One team. One source of truth.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-24 animate-pulse rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const now = new Date();
   const today = now.toISOString().split("T")[0];
+  const doneId = getDoneId();
 
   const stats = {
-    openTasks: tasks.filter((t) => t.status_id !== "done").length,
+    openTasks: tasks.filter((t) => t.status_id !== doneId).length,
     activeProjects: 3,
     overdueTasks: tasks.filter(
-      (t) => t.due_date && new Date(t.due_date) < now && t.status_id !== "done"
+      (t) => t.due_date && new Date(t.due_date) < now && t.status_id !== doneId
     ).length,
-    completedThisWeek: tasks.filter((t) => t.status_id === "done").length,
+    completedThisWeek: tasks.filter((t) => t.status_id === doneId).length,
   };
 
-  const myTasks = tasks
-    .filter((t) => t.owner_id === "user-1" && t.status_id !== "done")
-    .slice(0, 4);
+  const myTasks = tasks.filter((t) => t.status_id !== doneId).slice(0, 4);
 
   const dueToday = tasks.filter(
-    (t) => t.due_date === today && t.status_id !== "done"
+    (t) => t.due_date === today && t.status_id !== doneId
   );
 
   const overdue = tasks
     .filter(
       (t) =>
-        t.due_date && new Date(t.due_date) < now && t.status_id !== "done"
+        t.due_date && new Date(t.due_date) < now && t.status_id !== doneId
     )
     .slice(0, 3);
 
@@ -127,41 +182,38 @@ export default function DashboardPage() {
             </p>
           ) : (
             <div className="space-y-3">
-              {myTasks.map((task) => {
-                const status = getStatusConfig(task.status_id);
-                return (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between rounded-lg border border-gray-100 p-3 dark:border-gray-800"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {task.title}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
-                        <span
-                          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                          style={{
-                            backgroundColor: `${status.color}20`,
-                            color: status.color,
-                          }}
-                        >
-                          {status.name}
+              {myTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-100 p-3 dark:border-gray-800"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {task.title}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                      <span
+                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                        style={{
+                          backgroundColor: `${getStatusColor(task.status_id)}20`,
+                          color: getStatusColor(task.status_id),
+                        }}
+                      >
+                        {getStatusName(task.status_id)}
+                      </span>
+                      {task.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Calendar size={10} />
+                          {new Date(task.due_date).toLocaleDateString("en-NG", {
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </span>
-                        {task.due_date && (
-                          <span className="flex items-center gap-1">
-                            <Calendar size={10} />
-                            {new Date(task.due_date).toLocaleDateString("en-NG", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -179,28 +231,9 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {[
-              { user: "Ayomide", action: "completed", target: "Research driver onboarding flow", time: "2 days ago" },
-              { user: "Daniel", action: "created", target: "Set up Supabase database schema", time: "3 days ago" },
-              { user: "Widom", action: "updated", target: "Create Instagram content calendar", time: "3 days ago" },
-            ].map((activity, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 rounded-lg border border-gray-100 p-3 dark:border-gray-800"
-              >
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-navo-blue/10 text-[10px] font-bold text-navo-blue">
-                  {activity.user[0]}
-                </div>
-                <div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    <span className="font-medium">{activity.user}</span>{" "}
-                    {activity.action}{" "}
-                    <span className="font-medium">{activity.target}</span>
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-400">{activity.time}</p>
-                </div>
-              </div>
-            ))}
+            <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-400 dark:bg-gray-800/50">
+              Activity will appear here once the database is connected.
+            </div>
           </div>
         </div>
       </div>

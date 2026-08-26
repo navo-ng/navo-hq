@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
-import { Task, getStatusConfig, getPriorityConfig } from "@/types/task";
-import { Calendar, User, Folder, Tag, MessageSquare, Activity } from "lucide-react";
+import { Task, TaskStatusConfig } from "@/types/task";
+import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check } from "lucide-react";
 
 interface TaskDetailDrawerProps {
   task: Task | null;
   open: boolean;
   onClose: () => void;
+  onStatusChange?: (taskId: string, statusId: string) => void;
+  statuses: TaskStatusConfig[];
 }
 
 function formatDate(dateStr: string): string {
@@ -21,24 +24,41 @@ function formatDate(dateStr: string): string {
 }
 
 function isOverdue(task: Task): boolean {
-  if (!task.due_date || task.status_id === "done") return false;
+  if (!task.due_date || task.completed_at) return false;
   return new Date(task.due_date) < new Date();
 }
 
-export function TaskDetailDrawer({ task, open, onClose }: TaskDetailDrawerProps) {
+export function TaskDetailDrawer({
+  task,
+  open,
+  onClose,
+  onStatusChange,
+  statuses,
+}: TaskDetailDrawerProps) {
+  const [isUpdating, setIsUpdating] = useState(false);
+
   if (!task) return null;
 
-  const status = getStatusConfig(task.status_id);
-  const priority = getPriorityConfig(task.priority_id);
   const overdue = isOverdue(task);
+  const statusName = task.status?.name || "Unknown";
+  const statusColor = task.status?.color || "#9CA3AF";
+  const priorityName = task.priority?.name || "Unknown";
+  const priorityColor = task.priority?.color || "#9CA3AF";
+
+  const handleStatusChange = async (newStatusId: string) => {
+    if (!onStatusChange || isUpdating) return;
+    setIsUpdating(true);
+    await onStatusChange(task.id, newStatusId);
+    setIsUpdating(false);
+  };
 
   return (
     <Drawer open={open} onClose={onClose} title="Task Details">
       <div className="space-y-6">
         <div>
           <div className="mb-2 flex flex-wrap gap-2">
-            <Badge color={priority.color}>{priority.name}</Badge>
-            <Badge color={status.color}>{status.name}</Badge>
+            <Badge color={priorityColor}>{priorityName}</Badge>
+            <Badge color={statusColor}>{statusName}</Badge>
             {overdue && <Badge color="#EF4444">Overdue</Badge>}
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -109,6 +129,38 @@ export function TaskDetailDrawer({ task, open, onClose }: TaskDetailDrawerProps)
                 <Badge key={tag.id} color={tag.color}>
                   {tag.name}
                 </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {onStatusChange && (
+          <div>
+            <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Change Status
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {statuses.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => handleStatusChange(s.id)}
+                  disabled={isUpdating || s.id === task.status_id}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    s.id === task.status_id
+                      ? "text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                  } disabled:opacity-50`}
+                  style={
+                    s.id === task.status_id
+                      ? { backgroundColor: s.color }
+                      : undefined
+                  }
+                >
+                  {s.id === task.status_id && (
+                    <Check size={12} className="mr-1 inline" />
+                  )}
+                  {s.name}
+                </button>
               ))}
             </div>
           </div>

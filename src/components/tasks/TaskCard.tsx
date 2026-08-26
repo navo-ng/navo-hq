@@ -1,6 +1,6 @@
 "use client";
 
-import { Task, getStatusConfig, getPriorityConfig } from "@/types/task";
+import { Task } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, User } from "lucide-react";
 
@@ -10,14 +10,17 @@ interface TaskCardProps {
 }
 
 function isOverdue(task: Task): boolean {
-  if (!task.due_date || task.status_id === "done") return false;
+  if (!task.due_date || task.status_id === "") return false;
+  if (task.completed_at) return false;
   return new Date(task.due_date) < new Date();
 }
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
-  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil(
+    (date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Tomorrow";
@@ -28,9 +31,11 @@ function formatDate(dateStr: string): string {
 }
 
 export function TaskCard({ task, onClick }: TaskCardProps) {
-  const status = getStatusConfig(task.status_id);
-  const priority = getPriorityConfig(task.priority_id);
   const overdue = isOverdue(task);
+  const statusName = task.status?.name || "Unknown";
+  const statusColor = task.status?.color || "#9CA3AF";
+  const priorityName = task.priority?.name || "Unknown";
+  const priorityColor = task.priority?.color || "#9CA3AF";
 
   return (
     <button
@@ -44,8 +49,8 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-center gap-2">
-            <Badge color={priority.color}>{priority.name}</Badge>
-            <Badge color={status.color}>{status.name}</Badge>
+            <Badge color={priorityColor}>{priorityName}</Badge>
+            <Badge color={statusColor}>{statusName}</Badge>
           </div>
           <h3 className="mb-1 text-sm font-medium text-gray-900 dark:text-white">
             {task.title}

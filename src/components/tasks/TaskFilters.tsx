@@ -1,6 +1,6 @@
 "use client";
 
-import { TaskStatus, TaskPriority, TASK_STATUSES, TASK_PRIORITIES } from "@/types/task";
+import { TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { Search, Filter, X } from "lucide-react";
 
 export type QuickFilter = "all" | "my_tasks" | "overdue" | "due_today" | "completed";
@@ -8,12 +8,14 @@ export type QuickFilter = "all" | "my_tasks" | "overdue" | "due_today" | "comple
 interface TaskFiltersProps {
   quickFilter: QuickFilter;
   onQuickFilterChange: (filter: QuickFilter) => void;
-  statusFilter: TaskStatus | "all";
-  onStatusFilterChange: (status: TaskStatus | "all") => void;
-  priorityFilter: TaskPriority | "all";
-  onPriorityFilterChange: (priority: TaskPriority | "all") => void;
+  statusFilter: string;
+  onStatusFilterChange: (status: string) => void;
+  priorityFilter: string;
+  onPriorityFilterChange: (priority: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  statuses: TaskStatusConfig[];
+  priorities: TaskPriorityConfig[];
 }
 
 const QUICK_FILTERS: { id: QuickFilter; label: string }[] = [
@@ -33,6 +35,8 @@ export function TaskFilters({
   onPriorityFilterChange,
   searchQuery,
   onSearchChange,
+  statuses,
+  priorities,
 }: TaskFiltersProps) {
   const hasActiveFilters =
     statusFilter !== "all" || priorityFilter !== "all" || searchQuery.length > 0;
@@ -80,11 +84,11 @@ export function TaskFilters({
           <Filter size={14} className="text-gray-400" />
           <select
             value={statusFilter}
-            onChange={(e) => onStatusFilterChange(e.target.value as TaskStatus | "all")}
+            onChange={(e) => onStatusFilterChange(e.target.value)}
             className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-navo-blue focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
           >
             <option value="all">All Status</option>
-            {TASK_STATUSES.map((s) => (
+            {statuses.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -93,13 +97,11 @@ export function TaskFilters({
 
           <select
             value={priorityFilter}
-            onChange={(e) =>
-              onPriorityFilterChange(e.target.value as TaskPriority | "all")
-            }
+            onChange={(e) => onPriorityFilterChange(e.target.value)}
             className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-navo-blue focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
           >
             <option value="all">All Priority</option>
-            {TASK_PRIORITIES.map((p) => (
+            {priorities.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
