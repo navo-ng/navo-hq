@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const router = useRouter();
   const supabase = createClient();
@@ -17,6 +18,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({
@@ -28,20 +30,34 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      router.push("/dashboard");
+      router.refresh();
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (error) {
         setError(error.message);
         setLoading(false);
         return;
       }
-    }
 
-    router.push("/dashboard");
-    router.refresh();
+      if (data.user && !data.session) {
+        setSuccess(
+          "Account created! Check your email for a confirmation link, then sign in."
+        );
+        setMode("login");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -92,6 +108,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={6}
             className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             placeholder="••••••••"
           />
@@ -100,6 +117,12 @@ export default function LoginPage() {
         {error && (
           <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
             {error}
+          </p>
+        )}
+
+        {success && (
+          <p className="rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+            {success}
           </p>
         )}
 
@@ -148,7 +171,11 @@ export default function LoginPage() {
           <>
             Don&apos;t have an account?{" "}
             <button
-              onClick={() => setMode("signup")}
+              onClick={() => {
+                setMode("signup");
+                setError(null);
+                setSuccess(null);
+              }}
               className="font-medium text-navo-blue hover:underline"
             >
               Sign up
@@ -158,7 +185,11 @@ export default function LoginPage() {
           <>
             Already have an account?{" "}
             <button
-              onClick={() => setMode("login")}
+              onClick={() => {
+                setMode("login");
+                setError(null);
+                setSuccess(null);
+              }}
               className="font-medium text-navo-blue hover:underline"
             >
               Sign in

@@ -13,23 +13,28 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchTasks, fetchTaskStatuses } from "@/lib/data/tasks";
+import { fetchProjects } from "@/lib/data/projects";
 import { Task, TaskStatusConfig } from "@/types/task";
+import { Project } from "@/types/project";
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<TaskStatusConfig[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const supabase = createClient();
 
   useEffect(() => {
     async function load() {
-      const [taskData, statusData] = await Promise.all([
+      const [taskData, statusData, projectData] = await Promise.all([
         fetchTasks(supabase),
         fetchTaskStatuses(supabase),
+        fetchProjects(supabase),
       ]);
       setTasks(taskData);
       setStatuses(statusData);
+      setProjects(projectData);
       setIsLoading(false);
     }
     load();
@@ -78,7 +83,9 @@ export default function DashboardPage() {
 
   const stats = {
     openTasks: tasks.filter((t) => t.status_id !== doneId).length,
-    activeProjects: 3,
+    activeProjects: projects.filter(
+      (p) => p.status?.name?.toLowerCase() === "active"
+    ).length,
     overdueTasks: tasks.filter(
       (t) => t.due_date && new Date(t.due_date) < now && t.status_id !== doneId
     ).length,
@@ -221,20 +228,72 @@ export default function DashboardPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Team Activity
+              Active Projects
             </h2>
             <Link
-              href="/activity"
+              href="/projects"
               className="flex items-center gap-1 text-xs font-medium text-navo-blue hover:underline"
             >
               View all <ArrowRight size={12} />
             </Link>
           </div>
-          <div className="space-y-3">
-            <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-400 dark:bg-gray-800/50">
-              Activity will appear here once the database is connected.
+          {projects.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No projects yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {projects.slice(0, 4).map((project) => {
+                const stats = project.task_stats;
+                const hasTasks = stats && stats.total > 0;
+                const pct = hasTasks
+                  ? Math.round(((stats?.done || 0) / (stats?.total || 1)) * 100)
+                  : 0;
+                return (
+                  <Link
+                    key={project.id}
+                    href={`/projects/${project.id}`}
+                    className="block rounded-lg border border-gray-100 p-3 transition-colors hover:border-gray-200 dark:border-gray-800 dark:hover:border-gray-700"
+                  >
+                    <div className="mb-1 flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {project.name}
+                      </p>
+                      {project.status && (
+                        <span
+                          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                          style={{
+                            backgroundColor: `${project.status.color}20`,
+                            color: project.status.color,
+                          }}
+                        >
+                          {project.status.name}
+                        </span>
+                      )}
+                    </div>
+                    {hasTasks ? (
+                      <div className="mt-1.5">
+                        <div className="flex items-center justify-between text-xs text-gray-400">
+                          <span>
+                            {stats?.done}/{stats?.total} tasks
+                          </span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className="mt-1 h-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                          <div
+                            className="h-full rounded-full bg-navo-green"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-gray-400">No tasks yet</p>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
       </div>
 

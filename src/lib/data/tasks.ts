@@ -324,6 +324,10 @@ export async function fetchUsers(
   }));
 }
 
+/**
+ * @deprecated Use fetchProjects from @/lib/data/projects instead.
+ * This function only returns {id, name}[] and is kept for backward compatibility.
+ */
 export async function fetchProjects(
   supabase: SupabaseClient
 ): Promise<TaskProject[]> {
