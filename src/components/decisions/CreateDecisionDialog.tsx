@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/lib/hooks/useToast";
 import {
   DecisionUser,
   DecisionStatusConfig,
@@ -55,6 +56,7 @@ export function CreateDecisionDialog({
   const [selectedContributors, setSelectedContributors] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ title?: string }>({});
+  const { showToast } = useToast();
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -66,20 +68,26 @@ export function CreateDecisionDialog({
       return;
     }
 
-    onCreate({
-      title: title.trim(),
-      topic: topic.trim(),
-      context: context.trim(),
-      proposed_decision: proposedDecision.trim(),
-      decision_text: decisionText.trim(),
-      reason: reason.trim(),
-      alternatives: alternatives.trim(),
-      owner_id: ownerId,
-      project_id: projectId,
-      status_id: statusId,
-      contributor_ids: selectedContributors,
-      tag_ids: selectedTags,
-    });
+    try {
+      onCreate({
+        title: title.trim(),
+        topic: topic.trim(),
+        context: context.trim(),
+        proposed_decision: proposedDecision.trim(),
+        decision_text: decisionText.trim(),
+        reason: reason.trim(),
+        alternatives: alternatives.trim(),
+        owner_id: ownerId,
+        project_id: projectId,
+        status_id: statusId,
+        contributor_ids: selectedContributors,
+        tag_ids: selectedTags,
+      });
+
+      showToast({ title: "Decision created", type: "success" });
+    } catch {
+      showToast({ title: "Failed to save", type: "error" });
+    }
 
     resetForm();
     onClose();

@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Task, TaskStatusConfig } from "@/types/task";
-import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert } from "lucide-react";
+import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2 } from "lucide-react";
 import { CommentThread } from "@/components/comments/CommentThread";
 import { TaskDependencySection } from "./TaskDependencySection";
+import { DeleteTaskDialog } from "./DeleteTaskDialog";
 
 interface TaskDetailDrawerProps {
   task: Task | null;
   open: boolean;
   onClose: () => void;
   onStatusChange?: (taskId: string, statusId: string) => void;
+  onDeleted?: () => void;
   statuses: TaskStatusConfig[];
 }
 
@@ -35,9 +38,11 @@ export function TaskDetailDrawer({
   open,
   onClose,
   onStatusChange,
+  onDeleted,
   statuses,
 }: TaskDetailDrawerProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   if (!task) return null;
 
@@ -57,6 +62,18 @@ export function TaskDetailDrawer({
   return (
     <Drawer open={open} onClose={onClose} title="Task Details">
       <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeleteDialogOpen(true)}
+            className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+          >
+            <Trash2 size={14} />
+            Delete
+          </Button>
+        </div>
         <div>
           <div className="mb-2 flex flex-wrap gap-2">
             <Badge color={priorityColor}>{priorityName}</Badge>
@@ -194,6 +211,18 @@ export function TaskDetailDrawer({
           <TaskDependencySection taskId={task.id} />
         </div>
       </div>
+
+      {task && (
+        <DeleteTaskDialog
+          task={task}
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          onDeleted={() => {
+            onDeleted?.();
+            onClose();
+          }}
+        />
+      )}
     </Drawer>
   );
 }

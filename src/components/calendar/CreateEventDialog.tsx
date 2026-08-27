@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/lib/hooks/useToast";
 import { CalendarEvent, CreateCalendarEventInput, UpdateCalendarEventInput } from "@/types/calendar";
 
 interface CreateEventDialogProps {
@@ -41,6 +42,7 @@ export function CreateEventDialog({
   const [endTime, setEndTime] = useState(editingEvent?.end_time || "");
   const [type, setType] = useState(editingEvent?.type || "event");
   const [errors, setErrors] = useState<{ title?: string; event_date?: string }>({});
+  const { showToast } = useToast();
 
   const resetForm = () => {
     setTitle("");
@@ -64,26 +66,32 @@ export function CreateEventDialog({
       return;
     }
 
-    if (editingEvent && onUpdate) {
-      onUpdate(editingEvent.id, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        event_date: eventDate,
-        event_time: eventTime || undefined,
-        end_date: endDate || undefined,
-        end_time: endTime || undefined,
-        type,
-      });
-    } else {
-      onCreate({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        event_date: eventDate,
-        event_time: eventTime || undefined,
-        end_date: endDate || undefined,
-        end_time: endTime || undefined,
-        type,
-      });
+    try {
+      if (editingEvent && onUpdate) {
+        onUpdate(editingEvent.id, {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          event_date: eventDate,
+          event_time: eventTime || undefined,
+          end_date: endDate || undefined,
+          end_time: endTime || undefined,
+          type,
+        });
+      } else {
+        onCreate({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          event_date: eventDate,
+          event_time: eventTime || undefined,
+          end_date: endDate || undefined,
+          end_time: endTime || undefined,
+          type,
+        });
+      }
+
+      showToast({ title: "Event created", type: "success" });
+    } catch {
+      showToast({ title: "Failed to save", type: "error" });
     }
 
     resetForm();

@@ -7,6 +7,7 @@ import { Calendar, Users, CheckCircle } from "lucide-react";
 
 interface ProjectCardProps {
   project: Project;
+  onDelete?: (project: Project) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -24,7 +25,7 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const memberCount = project.members?.length || 0;
   const stats = project.task_stats;
   const hasTasks = stats && stats.total > 0;

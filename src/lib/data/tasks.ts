@@ -371,6 +371,14 @@ export async function updateTaskPriority(
   });
 }
 
+export async function deleteTask(
+  supabase: SupabaseClient,
+  taskId: string
+): Promise<void> {
+  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+  if (error) throw error;
+}
+
 export async function archiveTask(
   supabase: SupabaseClient,
   taskId: string

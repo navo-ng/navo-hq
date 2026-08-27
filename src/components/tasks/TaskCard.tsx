@@ -7,6 +7,7 @@ import { Calendar, User } from "lucide-react";
 interface TaskCardProps {
   task: Task;
   onClick: (task: Task) => void;
+  onDelete?: (task: Task) => void;
 }
 
 function isOverdue(task: Task): boolean {
@@ -30,7 +31,7 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
 }
 
-export function TaskCard({ task, onClick }: TaskCardProps) {
+export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
   const overdue = isOverdue(task);
   const statusName = task.status?.name || "Unknown";
   const statusColor = task.status?.color || "#9CA3AF";

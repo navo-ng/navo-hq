@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/lib/hooks/useToast";
 import {
   Decision,
   DecisionUser,
@@ -50,6 +51,7 @@ export function EditDecisionDialog({
   const [selectedTags, setSelectedTags] = useState<string[]>(decision.tags?.map((t) => t.id) || []);
   const [errors, setErrors] = useState<{ title?: string }>({});
   const [isSaving, setIsSaving] = useState(false);
+  const { showToast } = useToast();
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -77,9 +79,12 @@ export function EditDecisionDialog({
       });
 
       if (updated) {
+        showToast({ title: "Decision updated", type: "success" });
         onUpdated();
         onClose();
       }
+    } catch {
+      showToast({ title: "Failed to save", type: "error" });
     } finally {
       setIsSaving(false);
     }

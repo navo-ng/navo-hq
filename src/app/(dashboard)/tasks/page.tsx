@@ -34,6 +34,7 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
@@ -164,6 +165,11 @@ export default function TasksPage() {
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setDetailDrawerOpen(true);
+  };
+
+  const handleTaskDeleted = async () => {
+    const taskData = await fetchTasks(supabase);
+    setTasks(taskData);
   };
 
   const handleStatusChange = async (taskId: string, statusId: string) => {
@@ -312,6 +318,7 @@ export default function TasksPage() {
           setSelectedTask(null);
         }}
         onStatusChange={handleStatusChange}
+        onDeleted={handleTaskDeleted}
         statuses={statuses}
       />
     </div>

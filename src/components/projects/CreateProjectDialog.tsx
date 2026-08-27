@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/lib/hooks/useToast";
 import {
   ProjectUser,
   ProjectStatusConfig,
@@ -45,6 +46,7 @@ export function CreateProjectDialog({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ name?: string }>({});
+  const { showToast } = useToast();
 
   const handleSubmit = () => {
     if (!name.trim()) {
@@ -60,16 +62,22 @@ export function CreateProjectDialog({
       return;
     }
 
-    onCreate({
-      name: name.trim(),
-      description: description.trim(),
-      owner_id: ownerId,
-      status_id: statusId,
-      start_date: startDate,
-      target_date: targetDate,
-      member_ids: selectedMembers,
-      tag_ids: selectedTags,
-    });
+    try {
+      onCreate({
+        name: name.trim(),
+        description: description.trim(),
+        owner_id: ownerId,
+        status_id: statusId,
+        start_date: startDate,
+        target_date: targetDate,
+        member_ids: selectedMembers,
+        tag_ids: selectedTags,
+      });
+
+      showToast({ title: "Project created", type: "success" });
+    } catch {
+      showToast({ title: "Failed to save", type: "error" });
+    }
 
     resetForm();
     onClose();

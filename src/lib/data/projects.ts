@@ -379,6 +379,14 @@ export async function updateProject(
   return mapProject(data);
 }
 
+export async function deleteProject(
+  supabase: SupabaseClient,
+  projectId: string
+): Promise<void> {
+  const { error } = await supabase.from("projects").delete().eq("id", projectId);
+  if (error) throw error;
+}
+
 export async function archiveProject(
   supabase: SupabaseClient,
   projectId: string

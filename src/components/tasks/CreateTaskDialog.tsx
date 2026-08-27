@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/lib/hooks/useToast";
 import {
   TaskUser,
   TaskProject,
@@ -52,6 +53,7 @@ export function CreateTaskDialog({
   const [dueDate, setDueDate] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ title?: string }>({});
+  const { showToast } = useToast();
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -67,16 +69,22 @@ export function CreateTaskDialog({
       return;
     }
 
-    onCreate({
-      title: title.trim(),
-      description: description.trim(),
-      owner_id: ownerId,
-      project_id: projectId,
-      status_id: statusId,
-      priority_id: priorityId,
-      due_date: dueDate,
-      tag_ids: selectedTags,
-    });
+    try {
+      onCreate({
+        title: title.trim(),
+        description: description.trim(),
+        owner_id: ownerId,
+        project_id: projectId,
+        status_id: statusId,
+        priority_id: priorityId,
+        due_date: dueDate,
+        tag_ids: selectedTags,
+      });
+
+      showToast({ title: "Task created", type: "success" });
+    } catch {
+      showToast({ title: "Failed to save", type: "error" });
+    }
 
     resetForm();
     onClose();

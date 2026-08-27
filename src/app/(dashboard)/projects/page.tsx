@@ -8,6 +8,7 @@ import { ProjectFilters } from "@/components/projects/ProjectFilters";
 import { ProjectStats } from "@/components/projects/ProjectStats";
 import { ProjectEmptyState } from "@/components/projects/ProjectEmptyState";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
+import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
 import { Project, ProjectUser, ProjectStatusConfig } from "@/types/project";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -29,6 +30,8 @@ export default function ProjectsPage() {
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const supabase = createClient();
 
@@ -126,6 +129,11 @@ export default function ProjectsPage() {
     }
     return result;
   }, [projects]);
+
+  const handleProjectDeleted = async () => {
+    const projectData = await fetchProjects(supabase, { sort: "newest" });
+    setProjects(projectData);
+  };
 
   const handleCreateProject = async (input: {
     name: string;
@@ -231,7 +239,14 @@ export default function ProjectsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onDelete={(p) => {
+                    setProjectToDelete({ id: p.id, name: p.name });
+                    setDeleteDialogOpen(true);
+                  }}
+                />
               ))}
             </div>
           )}
@@ -246,6 +261,18 @@ export default function ProjectsPage() {
         statuses={statuses}
         tags={tags}
       />
+
+      {projectToDelete && (
+        <DeleteProjectDialog
+          project={projectToDelete}
+          open={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setProjectToDelete(null);
+          }}
+          onDeleted={handleProjectDeleted}
+        />
+      )}
     </div>
   );
 }

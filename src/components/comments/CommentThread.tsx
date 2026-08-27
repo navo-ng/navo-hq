@@ -7,6 +7,7 @@ import {
   fetchComments,
   createComment,
 } from "@/lib/data/comments";
+import { useToast } from "@/lib/hooks/useToast";
 import { formatRelativeTime } from "@/lib/utils/relative-time";
 import { Button } from "@/components/ui/button";
 import { Send, MessageSquare } from "lucide-react";
@@ -39,6 +40,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+  const { showToast } = useToast();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -85,8 +87,10 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       setComments((prev) =>
         prev.map((c) => (c.id === optimistic.id ? created : c))
       );
+      showToast({ title: "Comment added", type: "success" });
     } else {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      showToast({ title: "Failed to add comment", type: "error" });
     }
     setSending(false);
   };

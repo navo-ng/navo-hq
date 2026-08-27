@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Edit3,
   Archive,
+  Trash2,
   Plus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ProjectMembers } from "@/components/projects/ProjectMembers";
 import { ProjectTasks } from "@/components/projects/ProjectTasks";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
+import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import {
   Project,
@@ -70,6 +72,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
@@ -332,6 +335,16 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
                     <Archive size={14} />
                     Archive
                   </button>
+                  <button
+                    onClick={() => {
+                      setDeleteDialogOpen(true);
+                      setShowActions(false);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
                 </div>
               </>
             )}
@@ -469,6 +482,13 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
         tags={tags}
         statuses={taskStatuses}
         priorities={taskPriorities}
+      />
+
+      <DeleteProjectDialog
+        project={project}
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onDeleted={() => router.push("/projects")}
       />
     </div>
   );
