@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Notification,
@@ -16,6 +16,8 @@ export function useRealtimeNotifications() {
   const [userId, setUserId] = useState<string | null>(null);
   const [newNotification, setNewNotification] = useState<Notification | null>(null);
   const supabase = createClient();
+  const notificationsRef = useRef(notifications);
+  notificationsRef.current = notifications;
 
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +72,7 @@ export function useRealtimeNotifications() {
             prev.map((n) => (n.id === updated.id ? updated : n))
           );
           setUnreadCount((prev) => {
-            const wasRead = notifications.find((n) => n.id === updated.id)?.is_read;
+            const wasRead = notificationsRef.current.find((n) => n.id === updated.id)?.is_read;
             if (!wasRead && updated.is_read) return Math.max(0, prev - 1);
             if (wasRead && !updated.is_read) return prev + 1;
             return prev;
@@ -79,7 +81,7 @@ export function useRealtimeNotifications() {
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [supabase, userId, notifications]);
+  }, [supabase, userId]);
 
   const markAsRead = useCallback(async (id: string) => {
     await dbMarkAsRead(supabase, id);
