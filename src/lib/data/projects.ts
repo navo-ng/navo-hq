@@ -8,6 +8,7 @@ import {
   UpdateProjectInput,
 } from "@/types/project";
 import { logActivity } from "./log-activity";
+import { createNotification } from "./create-notification";
 
 const PROJECT_SELECT = `
   *,
@@ -424,6 +425,44 @@ export async function addProjectMember(
 
   if (error) {
     console.error("Error adding project member:", error);
+    return;
+  }
+
+  const [{ data: memberProfile }, { data: projectData }, { data: authData }] =
+    await Promise.all([
+      supabase.from("profiles").select("name").eq("id", userId).single(),
+      supabase.from("projects").select("name").eq("id", projectId).single(),
+      supabase.auth.getUser(),
+    ]);
+
+  const memberName = memberProfile?.name || "Unknown";
+  const projectName = projectData?.name || "project";
+
+  logActivity({
+    supabase,
+    action: "assign",
+    entityType: "project",
+    entityId: projectId,
+    entityName: projectName,
+    details: { member_name: memberName, member_id: userId },
+  });
+
+  if (authData.user?.id && authData.user.id !== userId) {
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", authData.user.id)
+      .single();
+
+    createNotification({
+      supabase,
+      userId,
+      type: "project_add",
+      title: "Added to project",
+      message: `${actorProfile?.name || "Someone"} added you to ${projectName}`,
+      entityType: "project",
+      entityId: projectId,
+    });
   }
 }
 
@@ -440,7 +479,22 @@ export async function removeProjectMember(
 
   if (error) {
     console.error("Error removing project member:", error);
+    return;
   }
+
+  const [{ data: memberProfile }, { data: projectData }] = await Promise.all([
+    supabase.from("profiles").select("name").eq("id", userId).single(),
+    supabase.from("projects").select("name").eq("id", projectId).single(),
+  ]);
+
+  logActivity({
+    supabase,
+    action: "delete",
+    entityType: "project",
+    entityId: projectId,
+    entityName: projectData?.name || "project",
+    details: { member_name: memberProfile?.name || "Unknown", member_id: userId },
+  });
 }
 
 export async function fetchAllUsers(

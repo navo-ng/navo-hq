@@ -320,6 +320,7 @@ export default function TasksPage() {
         onStatusChange={handleStatusChange}
         onDeleted={handleTaskDeleted}
         statuses={statuses}
+        users={users}
       />
     </div>
   );

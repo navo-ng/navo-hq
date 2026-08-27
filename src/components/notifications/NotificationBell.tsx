@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, CheckCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, CheckCheck, ChevronRight } from "lucide-react";
 import { useRealtimeNotifications } from "@/lib/hooks/useRealtimeNotifications";
 
 function formatTimeAgo(dateStr: string): string {
@@ -20,7 +21,19 @@ function formatTimeAgo(dateStr: string): string {
   return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
 }
 
+function getRoute(entityType: string | null, entityId: string | null): string | null {
+  if (!entityType || !entityId) return null;
+  switch (entityType) {
+    case "task": return `/tasks?id=${entityId}`;
+    case "project": return `/projects/${entityId}`;
+    case "decision": return `/decisions?id=${entityId}`;
+    case "document": return `/documents?id=${entityId}`;
+    default: return null;
+  }
+}
+
 export function NotificationBell() {
+  const router = useRouter();
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useRealtimeNotifications();
   const [isOpen, setIsOpen] = useState(false);
@@ -73,40 +86,60 @@ export function NotificationBell() {
                 No notifications
               </div>
             ) : (
-              notifications.map((notification) => (
-                <button
-                  key={notification.id}
-                  onClick={() => markAsRead(notification.id)}
-                  className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-                    !notification.is_read ? "bg-navo-blue/5" : ""
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={`text-sm ${
-                        !notification.is_read
-                          ? "font-medium text-gray-900 dark:text-white"
-                          : "text-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      {notification.title}
-                    </p>
-                    {notification.message && (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
-                        {notification.message}
+              notifications.map((notification) => {
+                const route = getRoute(notification.entity_type, notification.entity_id);
+                return (
+                  <button
+                    key={notification.id}
+                    onClick={() => {
+                      markAsRead(notification.id);
+                      if (route) {
+                        setIsOpen(false);
+                        router.push(route);
+                      }
+                    }}
+                    className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+                      !notification.is_read ? "bg-navo-blue/5" : ""
+                    } ${route ? "cursor-pointer" : ""}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`text-sm ${
+                          !notification.is_read
+                            ? "font-medium text-gray-900 dark:text-white"
+                            : "text-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {notification.title}
                       </p>
+                      {notification.message && (
+                        <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                          {notification.message}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs text-gray-400">
+                        {formatTimeAgo(notification.created_at)}
+                      </p>
+                    </div>
+                    {!notification.is_read && (
+                      <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-navo-blue" />
                     )}
-                    <p className="mt-1 text-xs text-gray-400">
-                      {formatTimeAgo(notification.created_at)}
-                    </p>
-                  </div>
-                  {!notification.is_read && (
-                    <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-navo-blue" />
-                  )}
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
+
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              router.push("/notifications");
+            }}
+            className="flex w-full items-center justify-center gap-1 border-t border-gray-200 px-4 py-2.5 text-xs font-medium text-navo-blue hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/50"
+          >
+            View all notifications
+            <ChevronRight size={14} />
+          </button>
         </div>
       )}
     </div>

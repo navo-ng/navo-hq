@@ -14,30 +14,36 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { fetchTasks, fetchTaskStatuses } from "@/lib/data/tasks";
 import { fetchProjects } from "@/lib/data/projects";
+import { fetchActivities } from "@/lib/data/activities";
 import { Task, TaskStatusConfig } from "@/types/task";
 import { Project } from "@/types/project";
+import { ActivityWithUser } from "@/types/activity";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
 import ProjectProgressList from "@/components/dashboard/ProjectProgressList";
+import { ActivityFeed } from "@/components/activity/ActivityFeed";
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<TaskStatusConfig[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const supabase = createClient();
 
   useEffect(() => {
     async function load() {
-      const [taskData, statusData, projectData] = await Promise.all([
+      const [taskData, statusData, projectData, activityData] = await Promise.all([
         fetchTasks(supabase),
         fetchTaskStatuses(supabase),
         fetchProjects(supabase),
+        fetchActivities(supabase, { limit: 10 }),
       ]);
       setTasks(taskData);
       setStatuses(statusData);
       setProjects(projectData);
+      setActivities(activityData);
       setIsLoading(false);
     }
     load();
@@ -234,6 +240,21 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TaskStatusChart tasks={tasks} />
         <TaskPriorityChart tasks={tasks} />
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Recent Activity
+          </h2>
+          <Link
+            href="/activity"
+            className="flex items-center gap-1 text-xs font-medium text-navo-blue hover:underline"
+          >
+            View all <ArrowRight size={12} />
+          </Link>
+        </div>
+        <ActivityFeed activities={activities} />
       </div>
 
       {(overdue.length > 0 || dueToday.length > 0) && (

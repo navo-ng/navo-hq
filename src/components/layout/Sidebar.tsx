@@ -11,6 +11,7 @@ import {
   FileText,
   Calendar,
   Activity,
+  Bell,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
 ];
 

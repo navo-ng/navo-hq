@@ -371,6 +371,18 @@ export async function updateTaskPriority(
   });
 }
 
+export async function updateTaskOwner(
+  supabase: SupabaseClient,
+  taskId: string,
+  newOwnerId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ owner_id: newOwnerId, updated_at: new Date().toISOString() })
+    .eq("id", taskId);
+  if (error) throw error;
+}
+
 export async function deleteTask(
   supabase: SupabaseClient,
   taskId: string
