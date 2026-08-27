@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, CheckCheck, ChevronRight } from "lucide-react";
-import { useRealtimeNotifications } from "@/lib/hooks/useRealtimeNotifications";
+import { useNotifications } from "@/lib/hooks/useRealtimeNotifications";
 
 function formatTimeAgo(dateStr: string): string {
   const now = new Date();
@@ -35,7 +35,7 @@ function getRoute(entityType: string | null, entityId: string | null): string | 
 export function NotificationBell() {
   const router = useRouter();
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useRealtimeNotifications();
+    useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

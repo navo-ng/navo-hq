@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Notification,
@@ -10,7 +10,18 @@ import {
   markAllRead as dbMarkAllRead,
 } from "@/lib/data/notifications";
 
-export function useRealtimeNotifications() {
+interface NotificationsContextValue {
+  notifications: Notification[];
+  unreadCount: number;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  clearNewNotification: () => void;
+  newNotification: Notification | null;
+}
+
+const NotificationsContext = createContext<NotificationsContextValue | null>(null);
+
+export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
@@ -100,12 +111,17 @@ export function useRealtimeNotifications() {
 
   const clearNewNotification = useCallback(() => setNewNotification(null), []);
 
-  return {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    clearNewNotification,
-    newNotification,
-  };
+  return (
+    <NotificationsContext.Provider
+      value={{ notifications, unreadCount, markAsRead, markAllAsRead, clearNewNotification, newNotification }}
+    >
+      {children}
+    </NotificationsContext.Provider>
+  );
+}
+
+export function useNotifications() {
+  const ctx = useContext(NotificationsContext);
+  if (!ctx) throw new Error("useNotifications must be used within NotificationsProvider");
+  return ctx;
 }
