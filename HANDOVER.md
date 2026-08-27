@@ -121,13 +121,13 @@ navo-hq/
 
 | Email | Password | Role |
 |-------|----------|------|
-| ayomide@navo.ng | NAVOteam2025! | Owner |
+| ayomideoyelakin10@gmail.com | NAVOteam2025! | Owner |
+| widom+navo@navo.ng | NAVOteam2025! | Member |
 | daniel@navo.ng | NAVOteam2025! | Member |
-| widom@navo.ng | NAVOteam2025! | Member |
 | samuel@navo.ng | NAVOteam2025! | Member |
 | pelumi@navo.ng | NAVOteam2025! | Member |
 
-**Note:** Seed migration `00028_seed_team_members.sql` must be run in Supabase SQL Editor to create Daniel, Samuel, and Pelumi accounts.
+**Note:** All accounts are created and active. Ayomide and Widom signed up via the app; Daniel, Samuel, and Pelumi were created via seed migration.
 
 ---
 
