@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { Notification } from "@/lib/data/notifications";
 import {
-  Notification,
   fetchNotifications,
   fetchUnreadCount,
   markAsRead as dbMarkAsRead,
@@ -67,6 +67,19 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           setNotifications((prev) => [n, ...prev]);
           setUnreadCount((prev) => prev + 1);
           setNewNotification(n);
+
+          if (document.hidden && Notification.permission === "granted") {
+            const url = getNotificationUrl(n.entity_type, n.entity_id);
+            const notification = new Notification(n.title, {
+              body: n.message || "",
+              icon: "/favicon.ico",
+              tag: n.id,
+            });
+            notification.onclick = () => {
+              window.focus();
+              if (url) window.location.href = url;
+            };
+          }
         }
       )
       .on(
@@ -118,6 +131,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       {children}
     </NotificationsContext.Provider>
   );
+}
+
+function getNotificationUrl(entityType: string | null, entityId: string | null): string | null {
+  if (!entityType || !entityId) return null;
+  switch (entityType) {
+    case "task": return `/tasks?id=${entityId}`;
+    case "project": return `/projects/${entityId}`;
+    case "decision": return `/decisions?id=${entityId}`;
+    case "document": return `/documents?id=${entityId}`;
+    default: return null;
+  }
 }
 
 export function useNotifications() {
