@@ -61,7 +61,7 @@ export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
               {task.description}
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
             {task.owner && (
               <span className="flex items-center gap-1">
                 <User size={12} />
@@ -71,7 +71,7 @@ export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
             {task.due_date && (
               <span
                 className={`flex items-center gap-1 ${
-                  overdue ? "font-medium text-red-500" : ""
+                  overdue ? "font-medium text-red-500 dark:text-red-400" : ""
                 }`}
               >
                 <Calendar size={12} />

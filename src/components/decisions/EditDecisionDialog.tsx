@@ -228,7 +228,7 @@ export function EditDecisionDialog({
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   selectedContributors.includes(user.id)
                     ? "bg-navo-blue text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                 }`}
               >
                 <span
@@ -261,7 +261,7 @@ export function EditDecisionDialog({
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     selectedTags.includes(tag.id)
                       ? "text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                   }`}
                   style={
                     selectedTags.includes(tag.id)

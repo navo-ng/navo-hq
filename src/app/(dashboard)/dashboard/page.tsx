@@ -120,28 +120,28 @@ export default function DashboardPage() {
       value: stats.openTasks,
       icon: CheckSquare,
       color: "text-navo-blue",
-      bg: "bg-navo-light",
+      bg: "bg-navo-light dark:bg-navo-blue/10",
     },
     {
       label: "Active Projects",
       value: stats.activeProjects,
       icon: FolderKanban,
       color: "text-navo-deep",
-      bg: "bg-blue-50",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
     },
     {
       label: "Overdue Tasks",
       value: stats.overdueTasks,
       icon: AlertTriangle,
       color: "text-red-500",
-      bg: "bg-red-50",
+      bg: "bg-red-50 dark:bg-red-900/20",
     },
     {
       label: "Completed This Week",
       value: stats.completedThisWeek,
       icon: CheckCircle,
       color: "text-navo-green",
-      bg: "bg-navo-green-light",
+      bg: "bg-navo-green-light dark:bg-emerald-900/20",
     },
   ];
 

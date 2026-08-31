@@ -99,7 +99,7 @@ export function NotificationBell() {
                       }
                     }}
                     className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-                      !notification.is_read ? "bg-navo-blue/5" : ""
+                      !notification.is_read ? "bg-navo-blue/5 dark:bg-navo-blue/10" : ""
                     } ${route ? "cursor-pointer" : ""}`}
                   >
                     <div className="min-w-0 flex-1">

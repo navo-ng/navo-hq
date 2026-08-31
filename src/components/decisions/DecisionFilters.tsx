@@ -90,7 +90,7 @@ export function DecisionFilters({
               onStatusFilterChange("all");
               onOwnerFilterChange("all");
             }}
-            className="whitespace-nowrap text-xs font-medium text-navo-blue hover:underline"
+            className="whitespace-nowrap text-xs font-medium text-navo-blue dark:text-blue-400 hover:underline"
           >
             Clear
           </button>

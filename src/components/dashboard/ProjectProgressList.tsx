@@ -43,7 +43,7 @@ export default function ProjectProgressList({
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="block rounded-lg border border-gray-100 p-3 transition-colors hover:border-gray-200 dark:border-gray-800 dark:hover:border-gray-700"
+                className="block rounded-lg border border-gray-100 dark:border-gray-800 p-3 transition-colors hover:border-gray-200 dark:border-gray-800 dark:hover:border-gray-700"
               >
                 <div className="mb-1 flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
