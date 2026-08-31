@@ -5,7 +5,6 @@ import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { EnableNotifications } from "@/components/notifications/EnableNotifications";
-import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 import { useSidebar } from "@/components/layout/Sidebar";
 
 function useMounted() {
@@ -20,7 +19,6 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
   const { theme, setTheme } = useTheme();
   const mounted = useMounted();
   const { setMobileOpen } = useSidebar();
-  const { permission } = usePushNotifications();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -52,7 +50,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
           <span className="hidden text-xs text-gray-400 sm:inline">⌘K</span>
         </button>
         <NotificationBell />
-        {permission !== "granted" && <EnableNotifications />}
+        <EnableNotifications />
         {mounted && (
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
