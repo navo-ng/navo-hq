@@ -4,6 +4,8 @@ export interface AppTag {
   id: string;
   name: string;
   color: string;
+  category?: string | null;
+  created_at?: string;
 }
 
 export async function fetchAllTags(supabase: SupabaseClient): Promise<AppTag[]> {
@@ -26,10 +28,10 @@ export async function fetchAllTags(supabase: SupabaseClient): Promise<AppTag[]> 
 
 export async function fetchTags(
   supabase: SupabaseClient
-): Promise<{ id: string; name: string; color: string }[]> {
+): Promise<AppTag[]> {
   const { data, error } = await supabase
     .from("tags")
-    .select("id, name, color")
+    .select("id, name, color, category, created_at")
     .order("name");
 
   if (error) {
@@ -41,18 +43,23 @@ export async function fetchTags(
     id: t.id,
     name: t.name,
     color: t.color,
+    category: t.category || null,
+    created_at: t.created_at,
   }));
 }
 
 export async function createTag(
   supabase: SupabaseClient,
-  name: string,
-  color: string
-): Promise<{ id: string; name: string; color: string } | null> {
+  input: { name: string; color: string; category?: string }
+): Promise<AppTag | null> {
   const { data, error } = await supabase
     .from("tags")
-    .insert({ name, color })
-    .select("id, name, color")
+    .insert({
+      name: input.name,
+      color: input.color,
+      category: input.category || null,
+    })
+    .select("id, name, color, category, created_at")
     .single();
 
   if (error) {
@@ -66,14 +73,17 @@ export async function createTag(
 export async function updateTag(
   supabase: SupabaseClient,
   tagId: string,
-  name: string,
-  color: string
-): Promise<{ id: string; name: string; color: string } | null> {
+  input: { name: string; color: string; category?: string }
+): Promise<AppTag | null> {
   const { data, error } = await supabase
     .from("tags")
-    .update({ name, color })
+    .update({
+      name: input.name,
+      color: input.color,
+      category: input.category || null,
+    })
     .eq("id", tagId)
-    .select("id, name, color")
+    .select("id, name, color, category, created_at")
     .single();
 
   if (error) {
