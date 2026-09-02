@@ -4,14 +4,14 @@ export interface AppTag {
   id: string;
   name: string;
   color: string;
-  category?: string | null;
-  created_at?: string;
+  category: string | null;
+  created_at: string;
 }
 
 export async function fetchAllTags(supabase: SupabaseClient): Promise<AppTag[]> {
   const { data, error } = await supabase
     .from("tags")
-    .select("id, name, color")
+    .select("id, name, color, category, created_at")
     .order("name");
 
   if (error) {
@@ -23,6 +23,8 @@ export async function fetchAllTags(supabase: SupabaseClient): Promise<AppTag[]> 
     id: t.id,
     name: t.name,
     color: t.color,
+    category: t.category || null,
+    created_at: t.created_at || "",
   }));
 }
 
