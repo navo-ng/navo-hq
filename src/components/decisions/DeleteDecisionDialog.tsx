@@ -42,7 +42,7 @@ export function DeleteDecisionDialog({
           <span className="font-semibold text-gray-900 dark:text-white">
             &ldquo;{decision.title}&rdquo;
           </span>
-          ? This action cannot be undone.
+          ? This will archive the decision.
         </p>
 
         <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">

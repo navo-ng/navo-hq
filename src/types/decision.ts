@@ -51,3 +51,21 @@ export interface CreateDecisionInput {
   contributor_ids?: string[];
   tag_ids?: string[];
 }
+
+export interface DecisionVote {
+  id: string;
+  decision_id: string;
+  user_id: string;
+  vote: "approve" | "reject" | "abstain";
+  comment: string | null;
+  created_at: string;
+  user?: DecisionUser;
+}
+
+export interface DecisionVoteSummary {
+  approve: number;
+  reject: number;
+  abstain: number;
+  total: number;
+  myVote: "approve" | "reject" | "abstain" | null;
+}

@@ -2,7 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 export interface LogActivityInput {
   supabase: SupabaseClient;
-  action: "create" | "update" | "delete" | "archive" | "assign" | "status_change" | "comment";
+  action: "create" | "update" | "delete" | "archive" | "assign" | "status_change" | "comment" | "vote";
   entityType: "task" | "project" | "decision" | "document" | "event" | "comment" | "tag";
   entityId: string;
   entityName: string;

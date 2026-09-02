@@ -3,6 +3,8 @@ import {
   Decision,
   DecisionStatusConfig,
   DecisionUser,
+  DecisionVote,
+  DecisionVoteSummary,
   CreateDecisionInput,
 } from "@/types/decision";
 import { logActivity } from "./log-activity";
@@ -407,4 +409,95 @@ export async function fetchAllTags(
     name: t.name,
     color: t.color,
   }));
+}
+
+export async function fetchDecisionVotes(
+  supabase: SupabaseClient,
+  decisionId: string
+): Promise<DecisionVote[]> {
+  const { data, error } = await supabase
+    .from("decision_votes")
+    .select("*, user:profiles(id, name, email, avatar_url)")
+    .eq("decision_id", decisionId)
+    .order("created_at");
+
+  if (error) {
+    console.error("Error fetching votes:", error);
+    return [];
+  }
+
+  return (data || []).map((v) => ({
+    ...v,
+    user: v.user
+      ? { id: v.user.id, name: v.user.name, email: v.user.email, avatar_url: v.user.avatar_url }
+      : undefined,
+  }));
+}
+
+export async function castVote(
+  supabase: SupabaseClient,
+  decisionId: string,
+  vote: "approve" | "reject" | "abstain",
+  comment?: string
+): Promise<DecisionVote | null> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return null;
+
+  const { data, error } = await supabase
+    .from("decision_votes")
+    .upsert(
+      {
+        decision_id: decisionId,
+        user_id: userData.user.id,
+        vote,
+        comment: comment || null,
+      },
+      { onConflict: "decision_id,user_id" }
+    )
+    .select("*, user:profiles(id, name, email, avatar_url)")
+    .single();
+
+  if (error) {
+    console.error("Error casting vote:", error);
+    return null;
+  }
+
+  logActivity({
+    supabase,
+    action: "vote",
+    entityType: "decision",
+    entityId: decisionId,
+    entityName: `voted ${vote}`,
+  });
+
+  return {
+    ...data,
+    user: data.user
+      ? { id: data.user.id, name: data.user.name, email: data.user.email, avatar_url: data.user.avatar_url }
+      : undefined,
+  };
+}
+
+export async function removeVote(
+  supabase: SupabaseClient,
+  decisionId: string
+): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+
+  const { error } = await supabase
+    .from("decision_votes")
+    .delete()
+    .eq("decision_id", decisionId)
+    .eq("user_id", userData.user.id);
+
+  if (error) console.error("Error removing vote:", error);
+}
+
+export function computeVoteSummary(votes: DecisionVote[], currentUserId: string): DecisionVoteSummary {
+  const approve = votes.filter((v) => v.vote === "approve").length;
+  const reject = votes.filter((v) => v.vote === "reject").length;
+  const abstain = votes.filter((v) => v.vote === "abstain").length;
+  const myVote = votes.find((v) => v.user_id === currentUserId)?.vote || null;
+  return { approve, reject, abstain, total: votes.length, myVote };
 }

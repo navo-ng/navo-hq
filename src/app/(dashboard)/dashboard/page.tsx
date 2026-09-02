@@ -29,11 +29,14 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | undefined>();
 
   const supabase = createClient();
 
   useEffect(() => {
     async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id);
       const [taskData, statusData, projectData, activityData] = await Promise.all([
         fetchTasks(supabase),
         fetchTaskStatuses(supabase),
@@ -98,10 +101,16 @@ export default function DashboardPage() {
     overdueTasks: tasks.filter(
       (t) => t.due_date && new Date(t.due_date) < now && t.status_id !== doneId
     ).length,
-    completedThisWeek: tasks.filter((t) => t.status_id === doneId).length,
+    completedThisWeek: tasks.filter((t) => {
+      if (t.status_id !== doneId || !t.completed_at) return false;
+      const completed = new Date(t.completed_at);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return completed >= sevenDaysAgo;
+    }).length,
   };
 
-  const myTasks = tasks.filter((t) => t.status_id !== doneId).slice(0, 4);
+  const myTasks = tasks.filter((t) => t.status_id !== doneId && t.owner_id === userId).slice(0, 4);
 
   const dueToday = tasks.filter(
     (t) => t.due_date === today && t.status_id !== doneId

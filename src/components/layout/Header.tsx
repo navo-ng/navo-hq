@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { Moon, Sun, Search, Menu } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { EnableNotifications } from "@/components/notifications/EnableNotifications";
 import { useSidebar } from "@/components/layout/Sidebar";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 function useMounted() {
   return useSyncExternalStore(
@@ -19,6 +21,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
   const { theme, setTheme } = useTheme();
   const mounted = useMounted();
   const { setMobileOpen } = useSidebar();
+  const { fullName } = useCurrentUser();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -59,9 +62,12 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
         )}
-        <div className="ml-1 h-8 w-8 rounded-full bg-navo-blue flex items-center justify-center text-sm font-medium text-white sm:ml-2">
-          N
-        </div>
+        <Link
+          href="/settings/profile"
+          className="ml-1 h-8 w-8 rounded-full bg-navo-blue flex items-center justify-center text-sm font-medium text-white sm:ml-2 hover:opacity-90 transition-opacity"
+        >
+          {fullName ? fullName.charAt(0).toUpperCase() : "N"}
+        </Link>
       </div>
     </header>
   );

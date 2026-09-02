@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { DocDocument } from "@/types/document";
 import { Badge } from "@/components/ui/badge";
 import { FileText, GitBranch, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -28,7 +29,10 @@ export function DocumentCard({ document: doc, onEdit, onDelete }: DocumentCardPr
   }, [menuOpen]);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
+    <Link
+      href={`/documents/${doc.id}`}
+      className="block rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700"
+    >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
@@ -46,7 +50,7 @@ export function DocumentCard({ document: doc, onEdit, onDelete }: DocumentCardPr
           )}
           <div className="relative" ref={menuRef}>
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(!menuOpen); }}
               className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
             >
               <MoreHorizontal size={16} />
@@ -54,7 +58,9 @@ export function DocumentCard({ document: doc, onEdit, onDelete }: DocumentCardPr
             {menuOpen && (
               <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setMenuOpen(false);
                     onEdit(doc);
                   }}
@@ -64,7 +70,9 @@ export function DocumentCard({ document: doc, onEdit, onDelete }: DocumentCardPr
                   Edit
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setMenuOpen(false);
                     onDelete(doc);
                   }}
@@ -122,6 +130,6 @@ export function DocumentCard({ document: doc, onEdit, onDelete }: DocumentCardPr
           )}
         </div>
       )}
-    </div>
+    </Link>
   );
 }

@@ -29,6 +29,7 @@ export default function TasksPage() {
   const [projects, setProjects] = useState<TaskProject[]>([]);
   const [tags, setTags] = useState<TaskTag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | undefined>();
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -43,6 +44,8 @@ export default function TasksPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!cancelled) setUserId(user?.id);
       const [taskData, statusData, priorityData, userData, projectData, tagData] =
         await Promise.all([
           fetchTasks(supabase),
@@ -71,7 +74,7 @@ export default function TasksPage() {
 
     switch (quickFilter) {
       case "my_tasks":
-        // Will be filtered by current user when auth is wired
+        result = result.filter((t) => t.owner_id === userId);
         break;
       case "overdue": {
         const doneId = statuses.find((s) => s.name === "Done")?.id;
@@ -115,7 +118,7 @@ export default function TasksPage() {
     }
 
     return result;
-  }, [tasks, quickFilter, statusFilter, priorityFilter, searchQuery, statuses]);
+  }, [tasks, quickFilter, statusFilter, priorityFilter, searchQuery, statuses, userId]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -168,6 +171,11 @@ export default function TasksPage() {
   };
 
   const handleTaskDeleted = async () => {
+    const taskData = await fetchTasks(supabase);
+    setTasks(taskData);
+  };
+
+  const handleTaskUpdated = async () => {
     const taskData = await fetchTasks(supabase);
     setTasks(taskData);
   };
@@ -319,6 +327,7 @@ export default function TasksPage() {
         }}
         onStatusChange={handleStatusChange}
         onDeleted={handleTaskDeleted}
+        onUpdated={handleTaskUpdated}
         statuses={statuses}
         users={users}
       />

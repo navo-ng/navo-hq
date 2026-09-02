@@ -195,12 +195,10 @@ export default function ProjectsPage() {
             Track major initiatives and workstreams
           </p>
         </div>
-        {projects.length > 0 && (
-          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-            <Plus size={16} />
-            New Project
-          </Button>
-        )}
+        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+          <Plus size={16} />
+          New Project
+        </Button>
       </div>
 
       {projects.length === 0 ? (

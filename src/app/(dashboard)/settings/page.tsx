@@ -164,7 +164,7 @@ export default function SettingsPage() {
               <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
               <option value="UTC">UTC</option>
               <option value="America/New_York">America/New_York (EST)</option>
-              <option value="America/Chicago">America/New_York (CST)</option>
+              <option value="America/Chicago">America/Chicago (CST)</option>
               <option value="America/Denver">America/Denver (MST)</option>
               <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
               <option value="Europe/London">Europe/London (GMT)</option>

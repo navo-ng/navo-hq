@@ -4,14 +4,15 @@ import { useState, useEffect } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Task, TaskStatusConfig, TaskUser } from "@/types/task";
+import { Task, TaskUser, TaskProject, TaskTag, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { ActivityWithUser } from "@/types/activity";
-import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2 } from "lucide-react";
+import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2, Pencil } from "lucide-react";
 import { CommentThread } from "@/components/comments/CommentThread";
 import { TaskDependencySection } from "./TaskDependencySection";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
+import { EditTaskDialog } from "./EditTaskDialog";
 import { createClient } from "@/lib/supabase/client";
-import { updateTaskOwner } from "@/lib/data/tasks";
+import { updateTaskOwner, fetchUsers, fetchProjects, fetchTags, fetchTaskStatuses, fetchTaskPriorities } from "@/lib/data/tasks";
 import { logActivity } from "@/lib/data/log-activity";
 import { createNotification } from "@/lib/data/create-notification";
 import { fetchActivities } from "@/lib/data/activities";
@@ -23,6 +24,7 @@ interface TaskDetailDrawerProps {
   onClose: () => void;
   onStatusChange?: (taskId: string, statusId: string) => void;
   onDeleted?: () => void;
+  onUpdated?: () => void;
   statuses: TaskStatusConfig[];
   users?: TaskUser[];
 }
@@ -47,12 +49,19 @@ export function TaskDetailDrawer({
   onClose,
   onStatusChange,
   onDeleted,
+  onUpdated,
   statuses,
   users = [],
 }: TaskDetailDrawerProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
+  const [allUsers, setAllUsers] = useState<TaskUser[]>([]);
+  const [allProjects, setAllProjects] = useState<TaskProject[]>([]);
+  const [allTags, setAllTags] = useState<TaskTag[]>([]);
+  const [allStatuses, setAllStatuses] = useState<TaskStatusConfig[]>([]);
+  const [allPriorities, setAllPriorities] = useState<TaskPriorityConfig[]>([]);
   const { showToast } = useToast();
   const supabase = createClient();
   const [ownerOverride, setOwnerOverride] = useState<string | null>(null);
@@ -70,6 +79,23 @@ export function TaskDetailDrawer({
     });
     return () => { cancelled = true; };
   }, [task, open, supabase]);
+
+  useEffect(() => {
+    if (!open) return;
+    Promise.all([
+      fetchUsers(supabase),
+      fetchProjects(supabase),
+      fetchTags(supabase),
+      fetchTaskStatuses(supabase),
+      fetchTaskPriorities(supabase),
+    ]).then(([u, p, t, s, pr]) => {
+      setAllUsers(u);
+      setAllProjects(p);
+      setAllTags(t);
+      setAllStatuses(s);
+      setAllPriorities(pr);
+    });
+  }, [open, supabase]);
 
   if (!localTask) return null;
 
@@ -133,7 +159,15 @@ export function TaskDetailDrawer({
     <Drawer open={open} onClose={onClose} title="Task Details">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditDialogOpen(true)}
+            className="text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <Pencil size={14} className="mr-1" />
+            Edit
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -321,6 +355,22 @@ export function TaskDetailDrawer({
             onDeleted?.();
             onClose();
           }}
+        />
+      )}
+
+      {localTask && (
+        <EditTaskDialog
+          task={localTask}
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onUpdated={() => {
+            onUpdated?.();
+          }}
+          users={allUsers}
+          projects={allProjects}
+          tags={allTags}
+          statuses={allStatuses}
+          priorities={allPriorities}
         />
       )}
     </Drawer>

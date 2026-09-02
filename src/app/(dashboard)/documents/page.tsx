@@ -205,12 +205,10 @@ export default function DocumentsPage() {
             Manage and track your team&apos;s documents
           </p>
         </div>
-        {documents.length > 0 && (
-          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-            <Plus size={16} />
-            New Document
-          </Button>
-        )}
+        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+          <Plus size={16} />
+          New Document
+        </Button>
       </div>
 
       {documents.length === 0 ? (

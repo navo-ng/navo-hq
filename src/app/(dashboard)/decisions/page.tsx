@@ -8,7 +8,7 @@ import { DecisionFilters } from "@/components/decisions/DecisionFilters";
 import { CreateDecisionDialog } from "@/components/decisions/CreateDecisionDialog";
 import { EditDecisionDialog } from "@/components/decisions/EditDecisionDialog";
 import { DeleteDecisionDialog } from "@/components/decisions/DeleteDecisionDialog";
-import { Decision, DecisionUser, DecisionStatusConfig } from "@/types/decision";
+import { Decision, DecisionUser, DecisionStatusConfig, DecisionVote } from "@/types/decision";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchDecisions,
@@ -17,6 +17,7 @@ import {
   fetchAllProjects,
   fetchAllTags,
   createDecision,
+  fetchDecisionVotes,
 } from "@/lib/data/decisions";
 
 export default function DecisionsPage() {
@@ -25,6 +26,7 @@ export default function DecisionsPage() {
   const [users, setUsers] = useState<DecisionUser[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [votesMap, setVotesMap] = useState<Record<string, DecisionVote[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -53,6 +55,18 @@ export default function DecisionsPage() {
         setUsers(userData);
         setProjects(projectData);
         setTags(tagData);
+
+        const votesResults = await Promise.all(
+          decisionData.map((d) => fetchDecisionVotes(supabase, d.id))
+        );
+        if (!cancelled) {
+          const map: Record<string, DecisionVote[]> = {};
+          decisionData.forEach((d, i) => {
+            map[d.id] = votesResults[i];
+          });
+          setVotesMap(map);
+        }
+
         setIsLoading(false);
       }
     }
@@ -200,12 +214,10 @@ export default function DecisionsPage() {
             Track and manage team decisions
           </p>
         </div>
-        {decisions.length > 0 && (
-          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-            <Plus size={16} />
-            New Decision
-          </Button>
-        )}
+        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+          <Plus size={16} />
+          New Decision
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -263,6 +275,7 @@ export default function DecisionsPage() {
             <DecisionCard
               key={decision.id}
               decision={decision}
+              votes={votesMap[decision.id] || []}
               onEdit={setEditingDecision}
               onDelete={setDeletingDecision}
             />
