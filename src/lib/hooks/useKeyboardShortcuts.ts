@@ -24,7 +24,7 @@ export function useKeyboardShortcuts(shortcuts?: ShortcutConfig[]) {
       { key: "5", meta: true, action: () => router.push("/documents"), description: "Go to Documents" },
       { key: "6", meta: true, action: () => router.push("/calendar"), description: "Go to Calendar" },
       { key: "7", meta: true, action: () => router.push("/team"), description: "Go to Team" },
-      { key: "n", meta: true, action: () => document.dispatchEvent(new CustomEvent("open-new-task")), description: "New task" },
+      { key: "c", meta: true, action: () => document.dispatchEvent(new CustomEvent("open-new-task")), description: "New task" },
     ];
 
     const allShortcuts = [...defaultShortcuts, ...(shortcuts || [])];

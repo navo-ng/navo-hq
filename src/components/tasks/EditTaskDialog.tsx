@@ -6,6 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/lib/hooks/useToast";
+import { CustomFieldRenderer } from "@/components/ui/CustomFieldRenderer";
+import { createClient } from "@/lib/supabase/client";
+import {
+  CustomFieldDefinition,
+  fetchCustomFieldDefinitions,
+  fetchCustomFieldValues,
+  saveCustomFieldValues,
+} from "@/lib/data/custom-fields";
 import { Task, TaskUser, TaskProject, TaskTag, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 
 interface EditTaskDialogProps {
@@ -45,6 +53,8 @@ export function EditTaskDialog({
   const [recurrenceEndDate, setRecurrenceEndDate] = useState(task.recurrence_end_date || "");
   const [errors, setErrors] = useState<{ title?: string }>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | null>>({});
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -60,6 +70,14 @@ export function EditTaskDialog({
       setRecurrence(task.recurrence || "none");
       setRecurrenceEndDate(task.recurrence_end_date || "");
       setErrors({});
+
+      // Fetch custom fields
+      const supabase = createClient();
+      fetchCustomFieldDefinitions(supabase, "task").then(async (defs) => {
+        setCustomFieldDefs(defs);
+        const values = await fetchCustomFieldValues(supabase, "task", task.id);
+        setCustomFieldValues(values);
+      });
     }
   }, [open, task]);
 
@@ -87,6 +105,11 @@ export function EditTaskDialog({
         recurrence,
         recurrence_end_date: recurrenceEndDate || null,
       });
+
+      // Save custom field values
+      if (Object.keys(customFieldValues).length > 0) {
+        await saveCustomFieldValues(supabase, task.id, customFieldValues);
+      }
 
       showToast({ title: "Task updated", type: "success" });
       onUpdated();
@@ -220,6 +243,24 @@ export function EditTaskDialog({
             ))}
           </div>
         </div>
+
+        {customFieldDefs.length > 0 && (
+          <div className="space-y-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Custom Fields
+            </p>
+            {customFieldDefs.map((def) => (
+              <CustomFieldRenderer
+                key={def.id}
+                definition={def}
+                value={customFieldValues[def.id] || null}
+                onChange={(value) =>
+                  setCustomFieldValues((prev) => ({ ...prev, [def.id]: value }))
+                }
+              />
+            ))}
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
           <Button variant="secondary" onClick={onClose}>

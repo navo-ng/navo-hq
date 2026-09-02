@@ -10,6 +10,33 @@ interface CreateNotificationInput {
   entityId?: string;
 }
 
+async function isNotificationTypeEnabled(
+  supabase: SupabaseClient,
+  userId: string,
+  type: string
+): Promise<boolean> {
+  const typeMap: Record<string, string> = {
+    task_assigned: "task_assigned",
+    task_status_changed: "task_status_changed",
+    task_commented: "task_commented",
+    project_added: "project_added",
+    decision_voted: "decision_voted",
+    dependency_added: "dependency_added",
+  };
+
+  const field = typeMap[type];
+  if (!field) return true;
+
+  const { data } = await supabase
+    .from("notification_preferences")
+    .select(field)
+    .eq("user_id", userId)
+    .single();
+
+  if (!data) return true;
+  return Boolean(data[field]);
+}
+
 export async function createNotification({
   supabase,
   userId,
@@ -20,6 +47,9 @@ export async function createNotification({
   entityId,
 }: CreateNotificationInput): Promise<void> {
   try {
+    const enabled = await isNotificationTypeEnabled(supabase, userId, type);
+    if (!enabled) return;
+
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,
       type,

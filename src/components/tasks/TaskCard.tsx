@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Task } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, Download } from "lucide-react";
+import { Calendar, User, Download, Link2 } from "lucide-react";
 import { generateICS, downloadICS } from "@/lib/utils/ics";
+import { createClient } from "@/lib/supabase/client";
 
 interface TaskCardProps {
   task: Task;
@@ -30,6 +32,58 @@ function formatDate(dateStr: string): string {
   if (diffDays < -1) return `${Math.abs(diffDays)}d overdue`;
   if (diffDays <= 7) return `${diffDays}d left`;
   return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
+}
+
+function DependencyIndicator({ taskId }: { taskId: string }) {
+  const [count, setCount] = useState(0);
+  const [blockedByNames, setBlockedByNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function load() {
+      const [blockedByRes, blockingRes] = await Promise.all([
+        supabase
+          .from("task_dependencies")
+          .select("task:blocks!task_dependencies_blocked_by_id_fkey(id, title)")
+          .eq("task_id", taskId),
+        supabase
+          .from("task_dependencies")
+          .select("task:tasks!task_dependencies_task_id_fkey(id, title)")
+          .eq("blocked_by_id", taskId),
+      ]);
+
+      if (cancelled) return;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bb = (blockedByRes.data || [])
+        .map((r: any) => r.task)
+        .filter(Boolean) as { id: string; title: string }[];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bl = (blockingRes.data || [])
+        .map((r: any) => r.task)
+        .filter(Boolean) as { id: string; title: string }[];
+
+      setCount(bb.length + bl.length);
+      setBlockedByNames(bb.map((t) => t.title));
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, [taskId]);
+
+  if (count === 0) return null;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-gray-400 dark:text-gray-500"
+      title={blockedByNames.length > 0 ? `Blocked by: ${blockedByNames.join(", ")}` : `${count} dependencies`}
+    >
+      <Link2 size={12} />
+      <span className="text-[10px]">{count}</span>
+    </span>
+  );
 }
 
 export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
@@ -68,6 +122,7 @@ export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
           <div className="mb-1.5 flex items-center gap-2">
             <Badge color={priorityColor}>{priorityName}</Badge>
             <Badge color={statusColor}>{statusName}</Badge>
+            <DependencyIndicator taskId={task.id} />
           </div>
           <h3 className="mb-1 text-sm font-medium text-gray-900 dark:text-white">
             {task.title}

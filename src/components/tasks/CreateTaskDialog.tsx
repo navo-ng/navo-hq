@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/lib/hooks/useToast";
+import { CustomFieldRenderer } from "@/components/ui/CustomFieldRenderer";
+import { createClient } from "@/lib/supabase/client";
+import {
+  CustomFieldDefinition,
+  fetchCustomFieldDefinitions,
+  saveCustomFieldValues,
+} from "@/lib/data/custom-fields";
 import {
   TaskUser,
   TaskProject,
@@ -13,6 +20,8 @@ import {
   TaskStatusConfig,
   TaskPriorityConfig,
 } from "@/types/task";
+import { CreateTaskFromTemplate } from "./CreateTaskFromTemplate";
+import { FileText } from "lucide-react";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -57,9 +66,50 @@ export function CreateTaskDialog({
   const [recurrence, setRecurrence] = useState("none");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
   const [errors, setErrors] = useState<{ title?: string }>({});
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const { showToast } = useToast();
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    if (open) {
+      const supabase = createClient();
+      fetchCustomFieldDefinitions(supabase, "task").then((defs) => {
+        setCustomFieldDefs(defs);
+        const initial: Record<string, string> = {};
+        for (const def of defs) {
+          initial[def.id] = "";
+        }
+        setCustomFieldValues(initial);
+      });
+    }
+  }, [open]);
+
+  const handleSelectTemplate = (template: {
+    title: string;
+    description: string;
+    priority_name: string;
+    status_name: string;
+    recurrence: string;
+  }) => {
+    setTitle(template.title);
+    setDescription(template.description);
+    setRecurrence(template.recurrence);
+
+    const matchedStatus = statuses.find(
+      (s) => s.name.toLowerCase() === template.status_name.toLowerCase()
+    );
+    if (matchedStatus) setStatusId(matchedStatus.id);
+
+    const matchedPriority = priorities.find(
+      (p) => p.name.toLowerCase() === template.priority_name.toLowerCase()
+    );
+    if (matchedPriority) setPriorityId(matchedPriority.id);
+
+    showToast({ title: "Template applied", type: "success" });
+  };
+
+  const handleSubmit = async () => {
     if (!title.trim()) {
       setErrors({ title: "Title is required" });
       return;
@@ -96,6 +146,10 @@ export function CreateTaskDialog({
     onClose();
   };
 
+  const handleCustomFieldChange = (fieldId: string, value: string) => {
+    setCustomFieldValues((prev) => ({ ...prev, [fieldId]: value }));
+  };
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -119,6 +173,14 @@ export function CreateTaskDialog({
   return (
     <Dialog open={open} onClose={onClose} title="Create Task" maxWidth="lg">
       <div className="space-y-4">
+        <button
+          onClick={() => setTemplateDialogOpen(true)}
+          className="flex w-full items-center gap-2 rounded-lg border border-dashed border-gray-300 p-3 text-sm text-gray-600 transition-colors hover:border-navo-blue hover:bg-navo-blue/5 hover:text-navo-blue dark:border-gray-700 dark:text-gray-400 dark:hover:border-navo-blue dark:hover:bg-navo-blue/10"
+        >
+          <FileText size={16} />
+          Use a template to pre-fill this task
+        </button>
+
         <Input
           label="Title"
           placeholder="What needs to be done?"
@@ -233,6 +295,22 @@ export function CreateTaskDialog({
           </div>
         </div>
 
+        {customFieldDefs.length > 0 && (
+          <div className="space-y-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Custom Fields
+            </p>
+            {customFieldDefs.map((def) => (
+              <CustomFieldRenderer
+                key={def.id}
+                definition={def}
+                value={customFieldValues[def.id] || null}
+                onChange={(value) => handleCustomFieldChange(def.id, value)}
+              />
+            ))}
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
           <Button variant="secondary" onClick={onClose}>
             Cancel
@@ -240,6 +318,17 @@ export function CreateTaskDialog({
           <Button onClick={handleSubmit}>Create Task</Button>
         </div>
       </div>
+
+      <CreateTaskFromTemplate
+        open={templateDialogOpen}
+        onClose={() => setTemplateDialogOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
+        users={users}
+        projects={projects}
+        tags={tags}
+        statuses={statuses}
+        priorities={priorities}
+      />
     </Dialog>
   );
 }

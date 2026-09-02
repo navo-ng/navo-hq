@@ -607,6 +607,39 @@ export async function archiveTask(
   });
 }
 
+export async function batchUpdateTasks(
+  supabase: SupabaseClient,
+  taskIds: string[],
+  updates: { status_id?: string; owner_id?: string; is_archived?: boolean }
+): Promise<void> {
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (updates.status_id !== undefined) {
+    payload.status_id = updates.status_id;
+    const doneId = await getDoneStatusId(supabase);
+    payload.completed_at = updates.status_id === doneId ? new Date().toISOString() : null;
+  }
+  if (updates.owner_id !== undefined) payload.owner_id = updates.owner_id;
+  if (updates.is_archived !== undefined) payload.is_archived = updates.is_archived;
+
+  const { error } = await supabase
+    .from("tasks")
+    .update(payload)
+    .in("id", taskIds);
+
+  if (error) {
+    console.error("Error batch updating tasks:", error);
+  }
+
+  logActivity({
+    supabase,
+    action: "batch_update",
+    entityType: "task",
+    entityId: taskIds[0],
+    entityName: `${taskIds.length} tasks`,
+    details: updates,
+  });
+}
+
 export { fetchAllUsers as fetchUsers } from "./users";
 export type { AppUser as TaskUser } from "./users";
 

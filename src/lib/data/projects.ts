@@ -512,6 +512,7 @@ export async function fetchProjectTasks(
     status_id: string;
     priority_id: string;
     owner_id: string | null;
+    start_date: string | null;
     due_date: string | null;
     completed_at: string | null;
     status: { id: string; name: string; color: string } | null;
@@ -523,7 +524,7 @@ export async function fetchProjectTasks(
     .from("tasks")
     .select(
       `
-      id, title, status_id, priority_id, owner_id, due_date, completed_at,
+      id, title, status_id, priority_id, owner_id, start_date, due_date, completed_at,
       status:task_statuses(id, name, color),
       priority:task_priorities(id, name, color),
       owner:profiles!tasks_owner_id_fkey(id, name, avatar_url)
@@ -545,6 +546,7 @@ export async function fetchProjectTasks(
     status_id: row.status_id,
     priority_id: row.priority_id,
     owner_id: row.owner_id,
+    start_date: row.start_date as string | null,
     due_date: row.due_date,
     completed_at: row.completed_at,
     status: row.status

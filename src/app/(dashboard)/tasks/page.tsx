@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Plus, GripVertical } from "lucide-react";
+import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
+import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskFilters, QuickFilter } from "@/components/tasks/TaskFilters";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
@@ -19,10 +21,12 @@ import {
   createTask,
   updateTaskStatus,
   reorderTasks,
+  batchUpdateTasks,
 } from "@/lib/data/tasks";
 import { TaskUser, TaskProject, TaskTag } from "@/types/task";
 import { useRealtimeEntity } from "@/lib/hooks/useRealtimeEntity";
 import { ErrorState } from "@/components/ui/error-state";
+import { printTaskReport } from "@/lib/utils/pdf-export";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -45,8 +49,18 @@ export default function TasksPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const dragNodeRef = useRef<HTMLDivElement | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchStatusId, setBatchStatusId] = useState("");
+  const [batchOwnerId, setBatchOwnerId] = useState("");
+  const [showCharts, setShowCharts] = useState(false);
 
   const supabase = createClient();
+
+  useEffect(() => {
+    const handler = () => setCreateDialogOpen(true);
+    document.addEventListener("open-new-task", handler);
+    return () => document.removeEventListener("open-new-task", handler);
+  }, []);
 
   const refetchTasks = useCallback(async () => {
     try {
@@ -280,6 +294,49 @@ export default function TasksPage() {
     dragNodeRef.current = null;
   };
 
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredTasks.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
+    }
+  };
+
+  const handleBatchStatusChange = async (statusId: string) => {
+    if (selectedIds.size === 0 || !statusId) return;
+    await batchUpdateTasks(supabase, Array.from(selectedIds), { status_id: statusId });
+    setSelectedIds(new Set());
+    setBatchStatusId("");
+    refetchTasks();
+  };
+
+  const handleBatchAssign = async (ownerId: string) => {
+    if (selectedIds.size === 0 || !ownerId) return;
+    await batchUpdateTasks(supabase, Array.from(selectedIds), { owner_id: ownerId });
+    setSelectedIds(new Set());
+    setBatchOwnerId("");
+    refetchTasks();
+  };
+
+  const handleBatchArchive = async () => {
+    if (selectedIds.size === 0) return;
+    await batchUpdateTasks(supabase, Array.from(selectedIds), { is_archived: true });
+    setSelectedIds(new Set());
+    refetchTasks();
+  };
+
   const handleStatusChange = async (taskId: string, statusId: string) => {
     await updateTaskStatus(supabase, taskId, statusId);
     setTasks((prev) =>
@@ -353,10 +410,16 @@ export default function TasksPage() {
             Track and manage all team tasks
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-          <Plus size={16} />
-          New Task
-        </Button>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="secondary" onClick={() => printTaskReport(filteredTasks)}>
+            <Printer size={16} />
+            Print
+          </Button>
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus size={16} />
+            New Task
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -390,6 +453,25 @@ export default function TasksPage() {
         ))}
       </div>
 
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <button
+          onClick={() => setShowCharts(!showCharts)}
+          className="flex w-full items-center justify-between p-4 text-left"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
+            <BarChart3 size={16} />
+            Charts
+          </span>
+          {showCharts ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
+        </button>
+        {showCharts && (
+          <div className="grid grid-cols-1 gap-4 border-t border-gray-200 p-4 dark:border-gray-800 sm:grid-cols-2">
+            <TaskStatusChart tasks={filteredTasks} />
+            <TaskPriorityChart tasks={filteredTasks} />
+          </div>
+        )}
+      </div>
+
       <TaskFilters
         quickFilter={quickFilter}
         onQuickFilterChange={setQuickFilter}
@@ -402,6 +484,22 @@ export default function TasksPage() {
         statuses={statuses}
         priorities={priorities}
       />
+
+      {filteredTasks.length > 0 && !isDragDisabled && (
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
+          <input
+            type="checkbox"
+            checked={selectedIds.size === filteredTasks.length && filteredTasks.length > 0}
+            onChange={toggleSelectAll}
+            className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+          />
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {selectedIds.size === 0
+              ? `Select all (${filteredTasks.length})`
+              : `${selectedIds.size} of ${filteredTasks.length} selected`}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-3">
         {filteredTasks.length === 0 ? (
@@ -427,9 +525,18 @@ export default function TasksPage() {
             >
               <div className="flex items-center gap-1">
                 {!isDragDisabled && (
-                  <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
-                    <GripVertical size={16} />
-                  </div>
+                  <>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(task.id)}
+                      onChange={() => toggleTaskSelection(task.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-4 w-4 shrink-0 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                    />
+                    <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
+                      <GripVertical size={16} />
+                    </div>
+                  </>
                 )}
                 <div className="flex-1 min-w-0">
                   <TaskCard task={task} onClick={handleTaskClick} />
@@ -464,6 +571,55 @@ export default function TasksPage() {
         statuses={statuses}
         users={users}
       />
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex items-center gap-4">
+            <span className="whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+              {selectedIds.size} task{selectedIds.size !== 1 ? "s" : ""} selected
+            </span>
+            <select
+              value={batchStatusId}
+              onChange={(e) => {
+                setBatchStatusId(e.target.value);
+                if (e.target.value) handleBatchStatusChange(e.target.value);
+              }}
+              className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              <option value="">Change status</option>
+              {statuses.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={batchOwnerId}
+              onChange={(e) => {
+                setBatchOwnerId(e.target.value);
+                if (e.target.value) handleBatchAssign(e.target.value);
+              }}
+              className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              <option value="">Assign to</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+            <Button variant="danger" size="sm" onClick={handleBatchArchive}>
+              Archive
+            </Button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

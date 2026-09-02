@@ -13,6 +13,7 @@ import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
 import { OnboardingOverlay } from "@/components/onboarding/OnboardingOverlay";
 import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsHelp } from "@/components/ui/keyboard-shortcuts-help";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -29,7 +30,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header onSearchClick={toggleSearch} />
-          <main className="flex-1 overflow-y-auto bg-gray-50 p-3 sm:p-6 dark:bg-gray-950">
+          <main className="flex-1 overflow-y-auto bg-gray-50 p-3 pb-20 sm:p-6 md:pb-6 dark:bg-gray-950">
             {children}
           </main>
         </div>
@@ -40,6 +41,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         onDismiss={clearNewNotification}
       />
       <KeyboardShortcutsHelp />
+      <BottomNav />
     </>
   );
 }

@@ -15,7 +15,7 @@ function formatJoinDate(dateStr: string): string {
 
 export function TeamMemberCard({ member }: TeamMemberCardProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
+    <div className="cursor-pointer rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
       <div className="flex items-start gap-4">
         <div
           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"

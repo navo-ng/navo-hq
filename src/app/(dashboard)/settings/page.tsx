@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Settings as SettingsIcon, Tag, Users, User } from "lucide-react";
+import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TeamSetting, UserSetting } from "@/types/settings";
@@ -118,7 +118,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href="/settings/tags"
           className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
@@ -132,6 +132,38 @@ export default function SettingsPage() {
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Create and manage tags for tasks and projects
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/custom-fields"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20">
+            <LayoutList size={20} className="text-blue-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Custom Fields
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Add custom fields to tasks and projects
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/notifications"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/20">
+            <Bell size={20} className="text-amber-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Notification Preferences
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Choose which notifications you receive
             </p>
           </div>
         </Link>

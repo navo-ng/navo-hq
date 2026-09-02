@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchBlockedByTasks,
@@ -10,7 +10,7 @@ import {
 } from "@/lib/data/dependencies";
 import { TaskSearchSelect } from "./TaskSearchSelect";
 import { Badge } from "@/components/ui/badge";
-import { X, ShieldAlert } from "lucide-react";
+import { X, ShieldAlert, Link2, ArrowRight } from "lucide-react";
 
 interface TaskDependencySectionProps {
   taskId: string;
@@ -33,6 +33,7 @@ export function TaskDependencySection({
   const [addingBlockedBy, setAddingBlockedBy] = useState(false);
   const [addingBlocks, setAddingBlocks] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [viewMode, setViewMode] = useState<"list" | "graph">("list");
   const supabase = createClient();
 
   useEffect(() => {
@@ -53,6 +54,18 @@ export function TaskDependencySection({
   }, [supabase, taskId, refreshKey]);
 
   const refresh = () => setRefreshKey((k) => k + 1);
+
+  const chainNodes = useMemo(() => {
+    const nodes: DependencyTask[] = [];
+    blockedBy.forEach((t) => {
+      if (!nodes.find((n) => n.id === t.id)) nodes.push(t);
+    });
+    nodes.push({ id: taskId, title: "This Task", status: null });
+    blocks.forEach((t) => {
+      if (!nodes.find((n) => n.id === t.id)) nodes.push(t);
+    });
+    return nodes;
+  }, [blockedBy, blocks, taskId]);
 
   const handleAddBlockedBy = async (
     task: { id: string; title: string }
@@ -99,81 +112,148 @@ export function TaskDependencySection({
     );
   }
 
+  const hasDeps = blockedBy.length > 0 || blocks.length > 0;
+
   return (
     <div className="space-y-5">
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <ShieldAlert size={14} />
-          Blocked By
-        </div>
-        {blockedBy.length === 0 && !addingBlockedBy ? (
-          <p className="text-xs text-gray-400">No dependencies</p>
-        ) : (
-          <div className="mb-2 space-y-1.5">
-            {blockedBy.map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/50"
-              >
-                <span className="flex-1 truncate text-sm text-gray-900 dark:text-white">
-                  {task.title}
-                </span>
-                {task.status && (
-                  <Badge color={task.status.color}>{task.status.name}</Badge>
-                )}
-                <button
-                  onClick={() => handleRemoveBlockedBy(task.id)}
-                  className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-500 dark:hover:bg-gray-700"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <TaskSearchSelect
-          excludeIds={[taskId, ...blockedBy.map((t) => t.id)]}
-          onSelect={handleAddBlockedBy}
-          placeholder="Add dependency..."
-        />
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setViewMode("list")}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            viewMode === "list"
+              ? "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
+        >
+          List
+        </button>
+        <button
+          onClick={() => setViewMode("graph")}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            viewMode === "graph"
+              ? "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
+        >
+          Graph
+        </button>
       </div>
 
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <ShieldAlert size={14} />
-          Blocks
-        </div>
-        {blocks.length === 0 && !addingBlocks ? (
-          <p className="text-xs text-gray-400">No dependencies</p>
-        ) : (
-          <div className="mb-2 space-y-1.5">
-            {blocks.map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/50"
-              >
-                <span className="flex-1 truncate text-sm text-gray-900 dark:text-white">
-                  {task.title}
-                </span>
-                {task.status && (
-                  <Badge color={task.status.color}>{task.status.name}</Badge>
-                )}
-                <button
-                  onClick={() => handleRemoveBlocks(task.id)}
-                  className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-500 dark:hover:bg-gray-700"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
+      {viewMode === "graph" && hasDeps && (
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/30">
+          <div className="flex items-center gap-1 min-w-max">
+            {chainNodes.map((node, idx) => {
+              const isCurrent = node.id === taskId;
+              return (
+                <div key={node.id} className="flex items-center gap-1">
+                  <div
+                    className={`relative rounded-lg border px-3 py-2 text-xs font-medium ${
+                      isCurrent
+                        ? "border-navo-blue bg-navo-blue/10 text-navo-blue ring-1 ring-navo-blue/30"
+                        : "border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                    }`}
+                  >
+                    <div className="max-w-[140px] truncate">{node.title}</div>
+                    {node.status && (
+                      <div className="mt-1">
+                        <Badge color={node.status.color}>
+                          {node.status.name}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  {idx < chainNodes.length - 1 && (
+                    <div className="flex items-center text-gray-400">
+                      <div className="h-px w-4 bg-gray-300 dark:bg-gray-600" />
+                      <ArrowRight size={14} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
-        <TaskSearchSelect
-          excludeIds={[taskId, ...blocks.map((t) => t.id)]}
-          onSelect={handleAddBlocks}
-          placeholder="Add task to block..."
-        />
-      </div>
+        </div>
+      )}
+
+      {viewMode === "list" && (
+        <div className="space-y-5">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
+              <ShieldAlert size={14} />
+              Blocked By
+            </div>
+            {blockedBy.length === 0 && !addingBlockedBy ? (
+              <p className="text-xs text-gray-400">No dependencies</p>
+            ) : (
+              <div className="mb-2 space-y-1.5">
+                {blockedBy.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 dark:border-red-900/30 dark:bg-red-900/10"
+                  >
+                    <Link2 size={14} className="shrink-0 text-red-400" />
+                    <span className="flex-1 truncate text-sm text-gray-900 dark:text-white">
+                      {task.title}
+                    </span>
+                    {task.status && (
+                      <Badge color={task.status.color}>{task.status.name}</Badge>
+                    )}
+                    <button
+                      onClick={() => handleRemoveBlockedBy(task.id)}
+                      className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-500 dark:hover:bg-gray-700"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <TaskSearchSelect
+              excludeIds={[taskId, ...blockedBy.map((t) => t.id)]}
+              onSelect={handleAddBlockedBy}
+              placeholder="Add dependency..."
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-orange-600 dark:text-orange-400">
+              <ShieldAlert size={14} />
+              Blocking
+            </div>
+            {blocks.length === 0 && !addingBlocks ? (
+              <p className="text-xs text-gray-400">No dependencies</p>
+            ) : (
+              <div className="mb-2 space-y-1.5">
+                {blocks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-2 rounded-lg border border-orange-100 bg-orange-50/50 px-3 py-2 dark:border-orange-900/30 dark:bg-orange-900/10"
+                  >
+                    <Link2 size={14} className="shrink-0 text-orange-400" />
+                    <span className="flex-1 truncate text-sm text-gray-900 dark:text-white">
+                      {task.title}
+                    </span>
+                    {task.status && (
+                      <Badge color={task.status.color}>{task.status.name}</Badge>
+                    )}
+                    <button
+                      onClick={() => handleRemoveBlocks(task.id)}
+                      className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-500 dark:hover:bg-gray-700"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <TaskSearchSelect
+              excludeIds={[taskId, ...blocks.map((t) => t.id)]}
+              onSelect={handleAddBlocks}
+              placeholder="Add task to block..."
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

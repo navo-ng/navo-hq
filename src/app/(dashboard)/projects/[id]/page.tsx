@@ -14,11 +14,15 @@ import {
   Archive,
   Trash2,
   Plus,
+  LayoutGrid,
+  GanttChart as GanttChartIcon,
+  Printer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProjectMembers } from "@/components/projects/ProjectMembers";
 import { ProjectTasks } from "@/components/projects/ProjectTasks";
+import { GanttChart } from "@/components/projects/GanttChart";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
@@ -27,7 +31,7 @@ import {
   ProjectUser,
   ProjectStatusConfig,
 } from "@/types/project";
-import { TaskStatusConfig, TaskPriorityConfig, TaskTag } from "@/types/task";
+import { TaskStatusConfig, TaskPriorityConfig, TaskTag, Task } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchProjectById,
@@ -41,6 +45,7 @@ import {
   fetchProjectTasks,
 } from "@/lib/data/projects";
 import { fetchTaskStatuses, fetchTaskPriorities, createTask } from "@/lib/data/tasks";
+import { printProjectReport } from "@/lib/utils/pdf-export";
 
 type TabId = "overview" | "tasks";
 
@@ -57,6 +62,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
       status_id: string;
       priority_id: string;
       owner_id: string | null;
+      start_date: string | null;
       due_date: string | null;
       completed_at: string | null;
       status: { id: string; name: string; color: string } | null;
@@ -75,6 +81,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [taskViewMode, setTaskViewMode] = useState<"table" | "gantt">("table");
 
   const supabase = createClient();
 
@@ -296,6 +303,13 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"
+            onClick={() => printProjectReport(project, projectTasks as Task[])}
+          >
+            <Printer size={16} />
+            Export
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => setCreateTaskDialogOpen(true)}
           >
             <Plus size={16} />
@@ -458,10 +472,61 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
       )}
 
       {activeTab === "tasks" && (
-        <ProjectTasks
-          tasks={projectTasks}
-          onAddTask={() => setCreateTaskDialogOpen(true)}
-        />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1 rounded-lg border border-gray-200 p-0.5 dark:border-gray-800">
+              <button
+                onClick={() => setTaskViewMode("table")}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  taskViewMode === "table"
+                    ? "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                <LayoutGrid size={14} />
+                Table
+              </button>
+              <button
+                onClick={() => setTaskViewMode("gantt")}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  taskViewMode === "gantt"
+                    ? "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                <GanttChartIcon size={14} />
+                Gantt
+              </button>
+            </div>
+            {taskViewMode === "table" && (
+              <button
+                onClick={() => setCreateTaskDialogOpen(true)}
+                className="text-xs font-medium text-navo-blue hover:underline"
+              >
+                + Add task
+              </button>
+            )}
+          </div>
+
+          {taskViewMode === "table" ? (
+            <ProjectTasks
+              tasks={projectTasks}
+              onAddTask={() => setCreateTaskDialogOpen(true)}
+            />
+          ) : (
+            <GanttChart
+              tasks={projectTasks.map((t) => ({
+                id: t.id,
+                title: t.title,
+                start_date: t.start_date,
+                due_date: t.due_date,
+                status: t.status?.name || "Unknown",
+                status_color: t.status?.color || "#9CA3AF",
+                owner: t.owner?.name,
+              }))}
+            />
+          )}
+        </div>
       )}
 
       <EditProjectDialog

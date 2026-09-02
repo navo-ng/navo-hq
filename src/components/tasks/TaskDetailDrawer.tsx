@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Task, TaskUser, TaskProject, TaskTag, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { ActivityWithUser } from "@/types/activity";
-import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2, Pencil } from "lucide-react";
+import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2, Pencil, Clock } from "lucide-react";
 import { CommentThread } from "@/components/comments/CommentThread";
 import { TaskDependencySection } from "./TaskDependencySection";
+import { TimeTracker } from "./TimeTracker";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { EditTaskDialog } from "./EditTaskDialog";
 import { createClient } from "@/lib/supabase/client";
@@ -343,6 +344,14 @@ export function TaskDetailDrawer({
             Dependencies
           </div>
           <TaskDependencySection taskId={localTask.id} />
+        </div>
+
+        <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <Clock size={14} />
+            Time Tracking
+          </div>
+          <TimeTracker taskId={localTask.id} />
         </div>
       </div>
 

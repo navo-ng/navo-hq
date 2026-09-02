@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VotePanel } from "@/components/decisions/VotePanel";
 import { Decision, DecisionVote, DecisionUser } from "@/types/decision";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDecisionById, fetchDecisionVotes, fetchAllUsers } from "@/lib/data/decisions";
+import { printDecisionReport } from "@/lib/utils/pdf-export";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-NG", {
@@ -100,10 +101,16 @@ export default function DecisionDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={() => router.push("/decisions")}>
-        <ArrowLeft size={16} />
-        Back to Decisions
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" onClick={() => router.push("/decisions")}>
+          <ArrowLeft size={16} />
+          Back to Decisions
+        </Button>
+        <Button variant="secondary" onClick={() => printDecisionReport(decision, votes)}>
+          <Printer size={16} />
+          Export
+        </Button>
+      </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-4 flex items-start justify-between gap-4">

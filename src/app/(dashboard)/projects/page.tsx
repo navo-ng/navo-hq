@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Plus } from "lucide-react";
+import { Plus, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { ProjectFilters } from "@/components/projects/ProjectFilters";
@@ -9,6 +9,7 @@ import { ProjectStats } from "@/components/projects/ProjectStats";
 import { ProjectEmptyState } from "@/components/projects/ProjectEmptyState";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
+import ProjectStatusChart from "@/components/projects/ProjectStatusChart";
 import { Project, ProjectUser, ProjectStatusConfig } from "@/types/project";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -35,6 +36,7 @@ export default function ProjectsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
 
   const supabase = createClient();
 
@@ -246,6 +248,24 @@ export default function ProjectsPage() {
             onHold={stats.onHold}
             completed={stats.completed}
           />
+
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+            <button
+              onClick={() => setShowCharts(!showCharts)}
+              className="flex w-full items-center justify-between p-4 text-left"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
+                <BarChart3 size={16} />
+                Charts
+              </span>
+              {showCharts ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
+            </button>
+            {showCharts && (
+              <div className="border-t border-gray-200 p-4 dark:border-gray-800">
+                <ProjectStatusChart projects={filteredProjects} />
+              </div>
+            )}
+          </div>
 
           <ProjectFilters
             searchQuery={searchQuery}

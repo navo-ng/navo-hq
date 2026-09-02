@@ -40,7 +40,10 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
     projects: { id: string; title: string; description?: string | null }[];
     decisions: { id: string; title: string; description?: string | null }[];
     documents: { id: string; title: string; description?: string | null }[];
-  }>({ tasks: [], projects: [], decisions: [], documents: [] });
+    team: { id: string; title: string; description?: string | null; email?: string; avatar_url?: string | null }[];
+    events: { id: string; title: string; description?: string | null; event_date?: string; event_time?: string | null }[];
+    comments: { id: string; title: string; description?: string | null; entity_type?: string; entity_id?: string }[];
+  }>({ tasks: [], projects: [], decisions: [], documents: [], team: [], events: [], comments: [] });
   const [activeIndex, setActiveIndex] = useState(0);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,7 +53,7 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       setQuery("");
-      setResults({ tasks: [], projects: [], decisions: [], documents: [] });
+      setResults({ tasks: [], projects: [], decisions: [], documents: [], team: [], events: [], comments: [] });
       setActiveIndex(0);
       setRecentSearches(getRecentSearches());
     }
@@ -75,13 +78,21 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
       { key: "projects", baseUrl: "/projects", useIdParam: false },
       { key: "decisions", baseUrl: "/decisions", useIdParam: true },
       { key: "documents", baseUrl: "/documents", useIdParam: true },
+      { key: "team", baseUrl: "/team", useIdParam: true },
+      { key: "events", baseUrl: "/calendar", useIdParam: true },
+      { key: "comments", baseUrl: "/tasks", useIdParam: true },
     ];
 
     for (const section of sectionConfig) {
       for (const item of results[section.key]) {
-        const url = section.useIdParam
-          ? `${section.baseUrl}?id=${item.id}`
-          : `${section.baseUrl}/${item.id}`;
+        let url: string;
+        if (section.key === "comments" && item.entity_type && item.entity_id) {
+          url = `/tasks?id=${item.entity_id}`;
+        } else if (section.useIdParam) {
+          url = `${section.baseUrl}?id=${item.id}`;
+        } else {
+          url = `${section.baseUrl}/${item.id}`;
+        }
         items.push({ url, title: item.title, type: section.key, description: item.description });
       }
     }
@@ -91,7 +102,7 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
   const performSearch = useCallback(
     async (searchQuery: string) => {
       if (!searchQuery.trim()) {
-        setResults({ tasks: [], projects: [], decisions: [], documents: [] });
+        setResults({ tasks: [], projects: [], decisions: [], documents: [], team: [], events: [], comments: [] });
         setLoading(false);
         return;
       }
@@ -100,7 +111,7 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
       const q = searchQuery.trim();
 
       try {
-        const [tasksRes, projectsRes, decisionsRes, documentsRes] = await Promise.all([
+        const [tasksRes, projectsRes, decisionsRes, documentsRes, teamRes, eventsRes, commentsRes] = await Promise.all([
           supabase
             .from("tasks")
             .select("id, title, description")
@@ -125,6 +136,23 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
             .ilike("title", `%${q}%`)
             .eq("is_archived", false)
             .limit(5),
+          supabase
+            .from("profiles")
+            .select("id, name, email, avatar_url")
+            .eq("is_active", true)
+            .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
+            .limit(5),
+          supabase
+            .from("calendar_events")
+            .select("id, title, description, event_date, event_time")
+            .ilike("title", `%${q}%`)
+            .eq("is_archived", false)
+            .limit(5),
+          supabase
+            .from("comments")
+            .select("id, content, entity_type, entity_id")
+            .ilike("content", `%${q}%`)
+            .limit(5),
         ]);
 
         setResults({
@@ -140,6 +168,27 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
             description: d.context,
           })),
           documents: documentsRes.data || [],
+          team: (teamRes.data || []).map((u) => ({
+            id: u.id,
+            title: u.name || u.email,
+            description: u.email,
+            email: u.email,
+            avatar_url: u.avatar_url,
+          })),
+          events: (eventsRes.data || []).map((e) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description,
+            event_date: e.event_date,
+            event_time: e.event_time,
+          })),
+          comments: (commentsRes.data || []).map((c) => ({
+            id: c.id,
+            title: c.content.slice(0, 80),
+            description: `${c.entity_type} comment`,
+            entity_type: c.entity_type,
+            entity_id: c.entity_id,
+          })),
         });
       } catch (err) {
         console.error("Search error:", err);
@@ -157,7 +206,7 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!value.trim()) {
-      setResults({ tasks: [], projects: [], decisions: [], documents: [] });
+      setResults({ tasks: [], projects: [], decisions: [], documents: [], team: [], events: [], comments: [] });
       setLoading(false);
       return;
     }
@@ -215,7 +264,7 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
             value={query}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search tasks, projects, decisions, documents..."
+            placeholder="Search tasks, projects, decisions, documents, team, events..."
             className="h-12 flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 outline-none dark:text-white dark:placeholder-gray-500"
           />
           <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-gray-300 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:border-gray-600">

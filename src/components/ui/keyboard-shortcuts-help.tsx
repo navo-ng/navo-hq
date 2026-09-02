@@ -4,7 +4,7 @@ import { Keyboard, X } from "lucide-react";
 
 const SHORTCUTS = [
   { keys: ["Cmd", "K"], description: "Open search" },
-  { keys: ["Cmd", "N"], description: "New task" },
+  { keys: ["Cmd", "C"], description: "New task" },
   { keys: ["Cmd", "1"], description: "Dashboard" },
   { keys: ["Cmd", "2"], description: "Tasks" },
   { keys: ["Cmd", "3"], description: "Projects" },
