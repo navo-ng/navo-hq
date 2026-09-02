@@ -2,6 +2,7 @@
 
 import { ActivityWithUser } from "@/types/activity";
 import { Badge } from "@/components/ui/badge";
+import { formatRelativeTime } from "@/lib/utils/relative-time";
 
 interface ActivityFeedProps {
   activities: ActivityWithUser[];
@@ -27,22 +28,6 @@ const ENTITY_LABELS: Record<string, string> = {
   comment: "Comment",
   team_member: "Team member",
 };
-
-function formatTimeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
-
-  if (diffSec < 60) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
-}
 
 export function ActivityFeed({ activities, showEntity = true }: ActivityFeedProps) {
   if (activities.length === 0) {
@@ -84,7 +69,7 @@ export function ActivityFeed({ activities, showEntity = true }: ActivityFeedProp
             )}
           </div>
           <span className="flex-shrink-0 text-xs text-gray-400">
-            {formatTimeAgo(activity.created_at)}
+            {formatRelativeTime(activity.created_at)}
           </span>
         </div>
       ))}

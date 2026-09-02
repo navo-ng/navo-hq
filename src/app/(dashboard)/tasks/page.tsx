@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { Plus, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskFilters, QuickFilter } from "@/components/tasks/TaskFilters";
@@ -18,8 +18,11 @@ import {
   fetchTags,
   createTask,
   updateTaskStatus,
+  reorderTasks,
 } from "@/lib/data/tasks";
 import { TaskUser, TaskProject, TaskTag } from "@/types/task";
+import { useRealtimeEntity } from "@/lib/hooks/useRealtimeEntity";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -29,6 +32,7 @@ export default function TasksPage() {
   const [projects, setProjects] = useState<TaskProject[]>([]);
   const [tags, setTags] = useState<TaskTag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | undefined>();
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -38,31 +42,53 @@ export default function TasksPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const dragNodeRef = useRef<HTMLDivElement | null>(null);
 
   const supabase = createClient();
+
+  const refetchTasks = useCallback(async () => {
+    try {
+      const data = await fetchTasks(supabase);
+      setTasks(data);
+      setError(null);
+    } catch {
+      setError("Failed to load tasks. Please try again.");
+    }
+  }, [supabase]);
+
+  useRealtimeEntity("tasks", null, () => refetchTasks(), () => refetchTasks(), () => refetchTasks());
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!cancelled) setUserId(user?.id);
-      const [taskData, statusData, priorityData, userData, projectData, tagData] =
-        await Promise.all([
-          fetchTasks(supabase),
-          fetchTaskStatuses(supabase),
-          fetchTaskPriorities(supabase),
-          fetchUsers(supabase),
-          fetchProjects(supabase),
-          fetchTags(supabase),
-        ]);
-      if (!cancelled) {
-        setTasks(taskData);
-        setStatuses(statusData);
-        setPriorities(priorityData);
-        setUsers(userData);
-        setProjects(projectData);
-        setTags(tagData);
-        setIsLoading(false);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!cancelled) setUserId(user?.id);
+        const [taskData, statusData, priorityData, userData, projectData, tagData] =
+          await Promise.all([
+            fetchTasks(supabase),
+            fetchTaskStatuses(supabase),
+            fetchTaskPriorities(supabase),
+            fetchUsers(supabase),
+            fetchProjects(supabase),
+            fetchTags(supabase),
+          ]);
+        if (!cancelled) {
+          setTasks(taskData);
+          setStatuses(statusData);
+          setPriorities(priorityData);
+          setUsers(userData);
+          setProjects(projectData);
+          setTags(tagData);
+          setIsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load tasks. Please try again.");
+          setIsLoading(false);
+        }
       }
     }
     load();
@@ -148,6 +174,8 @@ export default function TasksPage() {
     priority_id: string;
     due_date: string;
     tag_ids: string[];
+    recurrence: string;
+    recurrence_end_date: string;
   }) => {
     const task = await createTask(supabase, {
       title: newTask.title,
@@ -158,6 +186,8 @@ export default function TasksPage() {
       priority_id: newTask.priority_id,
       due_date: newTask.due_date || undefined,
       tag_ids: newTask.tag_ids,
+      recurrence: newTask.recurrence || "none",
+      recurrence_end_date: newTask.recurrence_end_date || undefined,
     });
 
     if (task) {
@@ -178,6 +208,76 @@ export default function TasksPage() {
   const handleTaskUpdated = async () => {
     const taskData = await fetchTasks(supabase);
     setTasks(taskData);
+  };
+
+  const isDragDisabled =
+    searchQuery !== "" ||
+    statusFilter !== "all" ||
+    priorityFilter !== "all" ||
+    quickFilter !== "all";
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
+    if (isDragDisabled) return;
+    setDraggedId(taskId);
+    dragNodeRef.current = e.currentTarget;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", taskId);
+    setTimeout(() => {
+      e.currentTarget.style.opacity = "0.4";
+    }, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
+    if (isDragDisabled) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (taskId !== draggedId) {
+      setOverId(taskId);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropId: string) => {
+    e.preventDefault();
+    if (isDragDisabled || !draggedId || draggedId === dropId) {
+      setDraggedId(null);
+      setOverId(null);
+      return;
+    }
+
+    const currentTasks = [...filteredTasks];
+    const draggedIndex = currentTasks.findIndex((t) => t.id === draggedId);
+    const dropIndex = currentTasks.findIndex((t) => t.id === dropId);
+
+    if (draggedIndex === -1 || dropIndex === -1) return;
+
+    const [draggedTask] = currentTasks.splice(draggedIndex, 1);
+    currentTasks.splice(dropIndex, 0, draggedTask);
+
+    setTasks((prev) => {
+      const newTasks = [...prev];
+      currentTasks.forEach((task, idx) => {
+        const pos = newTasks.findIndex((t) => t.id === task.id);
+        if (pos !== -1) {
+          newTasks[pos] = { ...newTasks[pos], sort_order: idx };
+        }
+      });
+      return newTasks.sort((a, b) => a.sort_order - b.sort_order);
+    });
+
+    reorderTasks(
+      supabase,
+      currentTasks.map((t) => t.id)
+    );
+
+    setDraggedId(null);
+    setOverId(null);
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.style.opacity = "1";
+    setDraggedId(null);
+    setOverId(null);
+    dragNodeRef.current = null;
   };
 
   const handleStatusChange = async (taskId: string, statusId: string) => {
@@ -226,6 +326,18 @@ export default function TasksPage() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tasks</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Track and manage all team tasks</p>
+        </div>
+        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); refetchTasks().finally(() => setIsLoading(false)); }} />
       </div>
     );
   }
@@ -302,7 +414,28 @@ export default function TasksPage() {
           </div>
         ) : (
           filteredTasks.map((task) => (
-            <TaskCard key={task.id} task={task} onClick={handleTaskClick} />
+            <div
+              key={task.id}
+              draggable={!isDragDisabled}
+              onDragStart={(e) => handleDragStart(e, task.id)}
+              onDragOver={(e) => handleDragOver(e, task.id)}
+              onDrop={(e) => handleDrop(e, task.id)}
+              onDragEnd={handleDragEnd}
+              className={`transition-all ${
+                draggedId === task.id ? "opacity-40" : ""
+              } ${overId === task.id && draggedId !== task.id ? "border-2 border-navo-blue rounded-xl" : ""}`}
+            >
+              <div className="flex items-center gap-1">
+                {!isDragDisabled && (
+                  <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
+                    <GripVertical size={16} />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <TaskCard task={task} onClick={handleTaskClick} />
+                </div>
+              </div>
+            </div>
           ))
         )}
       </div>

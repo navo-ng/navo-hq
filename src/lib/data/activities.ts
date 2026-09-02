@@ -36,13 +36,17 @@ export async function fetchActivities(
     entityType?: string;
     entityId?: string;
     limit?: number;
+    offset?: number;
   }
 ): Promise<ActivityWithUser[]> {
   let query = supabase
     .from("activities")
     .select(ACTIVITY_SELECT)
     .order("created_at", { ascending: false })
-    .limit(filters?.limit || 100);
+    .range(
+      filters?.offset || 0,
+      (filters?.offset || 0) + (filters?.limit || 100) - 1
+    );
 
   if (filters?.entityType) {
     query = query.eq("entity_type", filters.entityType);

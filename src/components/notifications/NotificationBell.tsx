@@ -4,22 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, CheckCheck, ChevronRight } from "lucide-react";
 import { useNotifications } from "@/lib/hooks/useRealtimeNotifications";
-
-function formatTimeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
-
-  if (diffSec < 60) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
-}
+import { formatRelativeTime } from "@/lib/utils/relative-time";
 
 function getRoute(entityType: string | null, entityId: string | null): string | null {
   if (!entityType || !entityId) return null;
@@ -118,7 +103,7 @@ export function NotificationBell() {
                         </p>
                       )}
                       <p className="mt-1 text-xs text-gray-400">
-                        {formatTimeAgo(notification.created_at)}
+                        {formatRelativeTime(notification.created_at)}
                       </p>
                     </div>
                     {!notification.is_read && (

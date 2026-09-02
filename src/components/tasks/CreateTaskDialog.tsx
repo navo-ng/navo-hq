@@ -26,6 +26,8 @@ interface CreateTaskDialogProps {
     priority_id: string;
     due_date: string;
     tag_ids: string[];
+    recurrence: string;
+    recurrence_end_date: string;
   }) => void;
   users: TaskUser[];
   projects: TaskProject[];
@@ -52,6 +54,8 @@ export function CreateTaskDialog({
   const [priorityId, setPriorityId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [recurrence, setRecurrence] = useState("none");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
   const [errors, setErrors] = useState<{ title?: string }>({});
   const { showToast } = useToast();
 
@@ -79,6 +83,8 @@ export function CreateTaskDialog({
         priority_id: priorityId,
         due_date: dueDate,
         tag_ids: selectedTags,
+        recurrence,
+        recurrence_end_date: recurrenceEndDate,
       });
 
       showToast({ title: "Task created", type: "success" });
@@ -99,6 +105,8 @@ export function CreateTaskDialog({
     setPriorityId("");
     setDueDate("");
     setSelectedTags([]);
+    setRecurrence("none");
+    setRecurrenceEndDate("");
     setErrors({});
   };
 
@@ -173,6 +181,30 @@ export function CreateTaskDialog({
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
+            label="Recurrence"
+            value={recurrence}
+            onChange={(e) => setRecurrence(e.target.value)}
+            placeholder="None"
+            options={[
+              { value: "none", label: "None" },
+              { value: "daily", label: "Daily" },
+              { value: "weekly", label: "Weekly" },
+              { value: "biweekly", label: "Biweekly" },
+              { value: "monthly", label: "Monthly" },
+            ]}
+          />
+          {recurrence !== "none" && (
+            <Input
+              label="Recurrence End Date"
+              type="date"
+              value={recurrenceEndDate}
+              onChange={(e) => setRecurrenceEndDate(e.target.value)}
+            />
+          )}
         </div>
 
         <div className="space-y-1">

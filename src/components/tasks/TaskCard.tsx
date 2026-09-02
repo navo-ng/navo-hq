@@ -2,7 +2,8 @@
 
 import { Task } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, Download } from "lucide-react";
+import { generateICS, downloadICS } from "@/lib/utils/ics";
 
 interface TaskCardProps {
   task: Task;
@@ -37,6 +38,21 @@ export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
   const statusColor = task.status?.color || "#9CA3AF";
   const priorityName = task.priority?.name || "Unknown";
   const priorityColor = task.priority?.color || "#9CA3AF";
+
+  const handleExportTaskICS = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!task.due_date) return;
+    const icsContent = generateICS([
+      {
+        title: task.title,
+        start: task.due_date + "T09:00:00",
+        end: task.due_date + "T10:00:00",
+        description: task.description || undefined,
+        id: task.id,
+      },
+    ]);
+    downloadICS(icsContent, `task-${task.id}.ics`);
+  };
 
   return (
     <button
@@ -76,6 +92,13 @@ export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
               >
                 <Calendar size={12} />
                 {formatDate(task.due_date)}
+                <button
+                  onClick={handleExportTaskICS}
+                  className="ml-1 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                  title="Export to calendar"
+                >
+                  <Download size={12} />
+                </button>
               </span>
             )}
             {task.project && (

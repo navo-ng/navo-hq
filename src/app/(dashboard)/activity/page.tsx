@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
 import { ActivityWithUser } from "@/types/activity";
 import { createClient } from "@/lib/supabase/client";
 import { fetchActivities } from "@/lib/data/activities";
 import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 const ENTITY_TYPES = [
   { value: "", label: "All entities" },
@@ -16,9 +18,13 @@ const ENTITY_TYPES = [
   { value: "comment", label: "Comments" },
 ];
 
+const PAGE_SIZE = 50;
+
 export default function ActivityPage() {
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [entityFilter, setEntityFilter] = useState("");
 
   const supabase = createClient();
@@ -27,12 +33,16 @@ export default function ActivityPage() {
     let cancelled = false;
     async function load() {
       setIsLoading(true);
+      setActivities([]);
+      setHasMore(true);
       const data = await fetchActivities(supabase, {
         entityType: entityFilter || undefined,
-        limit: 200,
+        limit: PAGE_SIZE,
+        offset: 0,
       });
       if (!cancelled) {
         setActivities(data);
+        setHasMore(data.length >= PAGE_SIZE);
         setIsLoading(false);
       }
     }
@@ -41,6 +51,18 @@ export default function ActivityPage() {
       cancelled = true;
     };
   }, [supabase, entityFilter]);
+
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    const data = await fetchActivities(supabase, {
+      entityType: entityFilter || undefined,
+      limit: PAGE_SIZE,
+      offset: activities.length,
+    });
+    setActivities((prev) => [...prev, ...data]);
+    setHasMore(data.length >= PAGE_SIZE);
+    setIsLoadingMore(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -72,9 +94,25 @@ export default function ActivityPage() {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <ActivityFeed activities={activities} />
-        </div>
+        <>
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+            <ActivityFeed activities={activities} />
+          </div>
+          {hasMore && (
+            <div className="flex justify-center">
+              <Button
+                variant="secondary"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : null}
+                Load more
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

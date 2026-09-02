@@ -19,6 +19,7 @@ import {
   createDecision,
   fetchDecisionVotes,
 } from "@/lib/data/decisions";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function DecisionsPage() {
   const [decisions, setDecisions] = useState<Decision[]>([]);
@@ -28,6 +29,7 @@ export default function DecisionsPage() {
   const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [votesMap, setVotesMap] = useState<Record<string, DecisionVote[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -41,33 +43,40 @@ export default function DecisionsPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [decisionData, statusData, userData, projectData, tagData] =
-        await Promise.all([
-          fetchDecisions(supabase, { sort: "newest" }),
-          fetchDecisionStatuses(supabase),
-          fetchAllUsers(supabase),
-          fetchAllProjects(supabase),
-          fetchAllTags(supabase),
-        ]);
-      if (!cancelled) {
-        setDecisions(decisionData);
-        setStatuses(statusData);
-        setUsers(userData);
-        setProjects(projectData);
-        setTags(tagData);
-
-        const votesResults = await Promise.all(
-          decisionData.map((d) => fetchDecisionVotes(supabase, d.id))
-        );
+      try {
+        const [decisionData, statusData, userData, projectData, tagData] =
+          await Promise.all([
+            fetchDecisions(supabase, { sort: "newest" }),
+            fetchDecisionStatuses(supabase),
+            fetchAllUsers(supabase),
+            fetchAllProjects(supabase),
+            fetchAllTags(supabase),
+          ]);
         if (!cancelled) {
-          const map: Record<string, DecisionVote[]> = {};
-          decisionData.forEach((d, i) => {
-            map[d.id] = votesResults[i];
-          });
-          setVotesMap(map);
-        }
+          setDecisions(decisionData);
+          setStatuses(statusData);
+          setUsers(userData);
+          setProjects(projectData);
+          setTags(tagData);
 
-        setIsLoading(false);
+          const votesResults = await Promise.all(
+            decisionData.map((d) => fetchDecisionVotes(supabase, d.id))
+          );
+          if (!cancelled) {
+            const map: Record<string, DecisionVote[]> = {};
+            decisionData.forEach((d, i) => {
+              map[d.id] = votesResults[i];
+            });
+            setVotesMap(map);
+          }
+
+          setIsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load decisions. Please try again.");
+          setIsLoading(false);
+        }
       }
     }
     load();
@@ -199,6 +208,18 @@ export default function DecisionsPage() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Decisions</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Track and manage team decisions</p>
+        </div>
+        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); window.location.reload(); }} />
       </div>
     );
   }

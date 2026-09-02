@@ -9,22 +9,19 @@ import { NotificationToast } from "@/components/notifications/NotificationToast"
 import { ToastProvider } from "@/components/ui/toast";
 import { NotificationsProvider, useNotifications } from "@/lib/hooks/useRealtimeNotifications";
 import { UserProvider } from "@/lib/hooks/useCurrentUser";
+import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
+import { OnboardingOverlay } from "@/components/onboarding/OnboardingOverlay";
+import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
+import { KeyboardShortcutsHelp } from "@/components/ui/keyboard-shortcuts-help";
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const toggleSearch = useCallback(() => setSearchOpen((prev) => !prev), []);
   const { newNotification, clearNewNotification } = useNotifications();
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        toggleSearch();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [toggleSearch]);
+  useKeyboardShortcuts([
+    { key: "k", meta: true, action: () => setSearchOpen(true), description: "Open search" },
+  ]);
 
   return (
     <>
@@ -42,6 +39,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         notification={newNotification}
         onDismiss={clearNewNotification}
       />
+      <KeyboardShortcutsHelp />
     </>
   );
 }
@@ -56,9 +54,12 @@ export default function DashboardLayout({
       <UserProvider>
         <ToastProvider>
           <NotificationsProvider>
-            <SidebarProvider>
-              <DashboardInner>{children}</DashboardInner>
-            </SidebarProvider>
+            <OnboardingProvider>
+              <SidebarProvider>
+                <DashboardInner>{children}</DashboardInner>
+                <OnboardingOverlay />
+              </SidebarProvider>
+            </OnboardingProvider>
           </NotificationsProvider>
         </ToastProvider>
       </UserProvider>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { CreateEventDialog } from "@/components/calendar/CreateEventDialog";
@@ -13,6 +13,7 @@ import {
   updateEvent,
   deleteEvent,
 } from "@/lib/data/calendar";
+import { generateICS, downloadICS } from "@/lib/utils/ics";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -136,6 +137,20 @@ export default function CalendarPage() {
     setEditingEvent(null);
   };
 
+  const handleExportICS = () => {
+    const icsEvents = events.map((event) => ({
+      title: event.title,
+      start: event.event_date + (event.event_time ? `T${event.event_time}` : "T00:00:00"),
+      end: event.end_date
+        ? event.end_date + (event.end_time ? `T${event.end_time}` : "T23:59:59")
+        : undefined,
+      description: event.description || undefined,
+      id: event.id,
+    }));
+    const icsContent = generateICS(icsEvents);
+    downloadICS(icsContent, "navo-calendar.ics");
+  };
+
   const monthName = currentDate.toLocaleString("default", { month: "long" });
 
   return (
@@ -152,6 +167,10 @@ export default function CalendarPage() {
         <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
           <Plus size={16} />
           New Event
+        </Button>
+        <Button onClick={handleExportICS} variant="secondary" className="shrink-0">
+          <Download size={16} />
+          Export .ics
         </Button>
         <div className="flex shrink-0 items-center rounded-lg border border-gray-200 dark:border-gray-700">
           <button

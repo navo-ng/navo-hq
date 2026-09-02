@@ -44,6 +44,9 @@ export interface Task {
   due_date: string | null;
   completed_at: string | null;
   is_archived: boolean;
+  sort_order: number;
+  recurrence: string | null;
+  recurrence_end_date: string | null;
   created_at: string;
   updated_at: string;
   owner?: TaskUser | null;
@@ -63,4 +66,6 @@ export interface CreateTaskInput {
   priority_id: string;
   due_date?: string;
   tag_ids?: string[];
+  recurrence?: string;
+  recurrence_end_date?: string;
 }

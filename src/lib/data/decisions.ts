@@ -2,7 +2,6 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import {
   Decision,
   DecisionStatusConfig,
-  DecisionUser,
   DecisionVote,
   DecisionVoteSummary,
   CreateDecisionInput,
@@ -349,27 +348,8 @@ export async function archiveDecision(
   });
 }
 
-export async function fetchAllUsers(
-  supabase: SupabaseClient
-): Promise<DecisionUser[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, name, email, avatar_url")
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-
-  return (data || []).map((u) => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    avatar_url: u.avatar_url,
-  }));
-}
+export { fetchAllUsers } from "./users";
+export type { AppUser as DecisionUser } from "./users";
 
 export async function fetchAllProjects(
   supabase: SupabaseClient
@@ -391,25 +371,8 @@ export async function fetchAllProjects(
   }));
 }
 
-export async function fetchAllTags(
-  supabase: SupabaseClient
-): Promise<{ id: string; name: string; color: string }[]> {
-  const { data, error } = await supabase
-    .from("tags")
-    .select("id, name, color")
-    .order("name");
-
-  if (error) {
-    console.error("Error fetching tags:", error);
-    return [];
-  }
-
-  return (data || []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    color: t.color,
-  }));
-}
+export { fetchAllTags } from "./tags";
+export type { AppTag as Tag } from "./tags";
 
 export async function fetchDecisionVotes(
   supabase: SupabaseClient,

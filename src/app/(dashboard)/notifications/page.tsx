@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCircle, FileText, AlertTriangle, CheckCheck, Inbox } from "lucide-react";
+import { Bell, CheckCircle, FileText, AlertTriangle, CheckCheck, Inbox, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -12,6 +12,9 @@ import {
   markAsRead as dbMarkAsRead,
   markAllRead as dbMarkAllRead,
 } from "@/lib/data/notifications";
+import { formatRelativeTime } from "@/lib/utils/relative-time";
+
+const PAGE_SIZE = 50;
 
 function getIcon(type: string) {
   switch (type) {
@@ -42,22 +45,6 @@ function getRoute(entityType: string | null, entityId: string | null): string | 
   }
 }
 
-function formatTimeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
-
-  if (diffSec < 60) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
-}
-
 type FilterTab = "all" | "unread";
 
 export default function NotificationsPage() {
@@ -66,30 +53,53 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   const [filter, setFilter] = useState<FilterTab>("all");
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setIsLoading(true);
+      setNotifications([]);
+      setHasMore(true);
+      setTotalCount(0);
       const uid = (await supabase.auth.getUser()).data.user?.id;
       if (!uid || cancelled) {
         setIsLoading(false);
         return;
       }
       const [data, count] = await Promise.all([
-        fetchNotifications(supabase, uid, { unreadOnly: filter === "unread" }),
+        fetchNotifications(supabase, uid, { unreadOnly: filter === "unread", limit: PAGE_SIZE, offset: 0 }),
         fetchUnreadCount(supabase, uid),
       ]);
       if (!cancelled) {
         setNotifications(data);
         setUnreadCount(count);
+        setTotalCount(data.length);
+        setHasMore(data.length >= PAGE_SIZE);
         setIsLoading(false);
       }
     }
     load();
     return () => { cancelled = true; };
   }, [supabase, filter]);
+
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    const uid = (await supabase.auth.getUser()).data.user?.id;
+    if (!uid) { setIsLoadingMore(false); return; }
+    const data = await fetchNotifications(supabase, uid, {
+      unreadOnly: filter === "unread",
+      limit: PAGE_SIZE,
+      offset: notifications.length,
+    });
+    setNotifications((prev) => [...prev, ...data]);
+    setTotalCount((prev) => prev + data.length);
+    setHasMore(data.length >= PAGE_SIZE);
+    setIsLoadingMore(false);
+  };
 
   const handleMarkAllRead = async () => {
     const uid = (await supabase.auth.getUser()).data.user?.id;
@@ -189,44 +199,57 @@ export default function NotificationsPage() {
           )}
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          {displayed.map((notification) => {
-            const route = getRoute(notification.entity_type, notification.entity_id);
-            return (
-              <button
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-                  !notification.is_read ? "bg-navo-blue/5" : ""
-                } ${route ? "cursor-pointer" : ""}`}
-              >
-                <div className="mt-0.5 flex-shrink-0">{getIcon(notification.type)}</div>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`text-sm ${
-                      !notification.is_read
-                        ? "font-semibold text-gray-900 dark:text-white"
-                        : "text-gray-700 dark:text-gray-300"
-                    }`}
-                  >
-                    {notification.title}
-                  </p>
-                  {notification.message && (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
-                      {notification.message}
+        <>
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+            {displayed.map((notification) => {
+              const route = getRoute(notification.entity_type, notification.entity_id);
+              return (
+                <button
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+                    !notification.is_read ? "bg-navo-blue/5" : ""
+                  } ${route ? "cursor-pointer" : ""}`}
+                >
+                  <div className="mt-0.5 flex-shrink-0">{getIcon(notification.type)}</div>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`text-sm ${
+                        !notification.is_read
+                          ? "font-semibold text-gray-900 dark:text-white"
+                          : "text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      {notification.title}
                     </p>
+                    {notification.message && (
+                      <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                        {notification.message}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-400">
+                      {formatRelativeTime(notification.created_at)}
+                    </p>
+                  </div>
+                  {!notification.is_read && (
+                    <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-navo-blue" />
                   )}
-                  <p className="mt-1 text-xs text-gray-400">
-                    {formatTimeAgo(notification.created_at)}
-                  </p>
-                </div>
-                {!notification.is_read && (
-                  <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-navo-blue" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+                </button>
+              );
+            })}
+            <div className="border-t border-gray-100 px-4 py-3 text-center text-xs text-gray-400 dark:border-gray-800">
+              Showing {totalCount}
+            </div>
+          </div>
+          {hasMore && (
+            <div className="flex justify-center">
+              <Button variant="secondary" onClick={handleLoadMore} disabled={isLoadingMore}>
+                {isLoadingMore ? <Loader2 size={16} className="animate-spin" /> : null}
+                Load more
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,9 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import {
   Task,
-  TaskUser,
   TaskProject,
-  TaskTag,
   TaskStatusConfig,
   TaskPriorityConfig,
   CreateTaskInput,
@@ -42,6 +40,9 @@ function mapTask(row: Record<string, unknown>): Task {
     due_date: row.due_date as string | null,
     completed_at: row.completed_at as string | null,
     is_archived: row.is_archived as boolean,
+    sort_order: (row.sort_order as number) ?? 0,
+    recurrence: (row.recurrence as string) ?? "none",
+    recurrence_end_date: (row.recurrence_end_date as string) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     owner: owner
@@ -103,6 +104,7 @@ export async function fetchTasks(
   let query = supabase
     .from("tasks")
     .select(TASK_SELECT)
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
   if (!filters?.include_archived) {
@@ -227,6 +229,8 @@ export async function createTask(
       owner_id: input.owner_id || null,
       project_id: input.project_id || null,
       due_date: input.due_date || null,
+      recurrence: input.recurrence || "none",
+      recurrence_end_date: input.recurrence_end_date || null,
     })
     .select(TASK_SELECT)
     .single();
@@ -299,7 +303,7 @@ export async function updateTaskStatus(
 
   const { data: taskData } = await supabase
     .from("tasks")
-    .select("owner_id, title")
+    .select("id, owner_id, title, recurrence, recurrence_end_date, due_date, priority_id, project_id, creator_id, description, status_id")
     .eq("id", taskId)
     .single();
 
@@ -307,6 +311,22 @@ export async function updateTaskStatus(
 
   if (error) {
     console.error("Error updating task status:", error);
+  }
+
+  if (statusId === doneId && taskData?.recurrence && taskData.recurrence !== "none") {
+    await createNextRecurringTask(supabase, {
+      id: taskData.id as string,
+      title: taskData.title as string,
+      description: taskData.description as string | null,
+      creator_id: taskData.creator_id as string,
+      owner_id: taskData.owner_id as string | null,
+      project_id: taskData.project_id as string | null,
+      priority_id: taskData.priority_id as string,
+      status_id: taskData.status_id as string,
+      due_date: taskData.due_date as string | null,
+      recurrence: taskData.recurrence as string | null,
+      recurrence_end_date: taskData.recurrence_end_date as string | null,
+    });
   }
 
   logActivity({
@@ -395,6 +415,8 @@ export async function updateTask(
     project_id?: string | null;
     due_date?: string | null;
     tag_ids?: string[];
+    recurrence?: string;
+    recurrence_end_date?: string | null;
   }
 ): Promise<Task | null> {
   const { tag_ids, ...taskData } = input;
@@ -412,6 +434,9 @@ export async function updateTask(
   }
   if ("due_date" in taskData && taskData.due_date === null) {
     updatePayload.due_date = null;
+  }
+  if ("recurrence_end_date" in taskData && taskData.recurrence_end_date === null) {
+    updatePayload.recurrence_end_date = null;
   }
 
   if (taskData.status_id) {
@@ -469,6 +494,94 @@ export async function deleteTask(
   if (error) throw error;
 }
 
+export async function reorderTasks(
+  supabase: SupabaseClient,
+  taskIds: string[]
+): Promise<void> {
+  const updates = taskIds.map((id, index) =>
+    supabase.from("tasks").update({ sort_order: index, updated_at: new Date().toISOString() }).eq("id", id)
+  );
+  await Promise.all(updates);
+}
+
+export async function createNextRecurringTask(
+  supabase: SupabaseClient,
+  completedTask: {
+    id: string;
+    title: string;
+    description: string | null;
+    creator_id: string;
+    owner_id: string | null;
+    project_id: string | null;
+    priority_id: string;
+    status_id: string;
+    due_date: string | null;
+    recurrence: string | null;
+    recurrence_end_date: string | null;
+  }
+): Promise<Task | null> {
+  const recurrence = completedTask.recurrence;
+  if (!recurrence || recurrence === "none") return null;
+
+  if (completedTask.recurrence_end_date) {
+    const endDate = new Date(completedTask.recurrence_end_date);
+    if (new Date() > endDate) return null;
+  }
+
+  let nextDueDate: string | null = null;
+  if (completedTask.due_date) {
+    const base = new Date(completedTask.due_date);
+    switch (recurrence) {
+      case "daily":
+        base.setDate(base.getDate() + 1);
+        break;
+      case "weekly":
+        base.setDate(base.getDate() + 7);
+        break;
+      case "biweekly":
+        base.setDate(base.getDate() + 14);
+        break;
+      case "monthly":
+        base.setMonth(base.getMonth() + 1);
+        break;
+    }
+    nextDueDate = base.toISOString().split("T")[0];
+  }
+
+  const { data: todoStatus } = await supabase
+    .from("task_statuses")
+    .select("id")
+    .eq("name", "To Do")
+    .single();
+
+  const insertData: Record<string, unknown> = {
+    title: completedTask.title,
+    description: completedTask.description,
+    creator_id: completedTask.creator_id,
+    owner_id: completedTask.owner_id,
+    project_id: completedTask.project_id,
+    priority_id: completedTask.priority_id,
+    status_id: todoStatus?.id || completedTask.status_id,
+    due_date: nextDueDate,
+    recurrence: recurrence,
+    recurrence_end_date: completedTask.recurrence_end_date,
+    completed_at: null,
+  };
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert(insertData)
+    .select(TASK_SELECT)
+    .single();
+
+  if (error) {
+    console.error("Error creating recurring task:", error);
+    return null;
+  }
+
+  return mapTask(data);
+}
+
 export async function archiveTask(
   supabase: SupabaseClient,
   taskId: string
@@ -494,27 +607,8 @@ export async function archiveTask(
   });
 }
 
-export async function fetchUsers(
-  supabase: SupabaseClient
-): Promise<TaskUser[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, name, email, avatar_url")
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-
-  return (data || []).map((u) => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    avatar_url: u.avatar_url,
-  }));
-}
+export { fetchAllUsers as fetchUsers } from "./users";
+export type { AppUser as TaskUser } from "./users";
 
 /**
  * @deprecated Use fetchProjects from @/lib/data/projects instead.
@@ -540,22 +634,5 @@ export async function fetchProjects(
   }));
 }
 
-export async function fetchTags(
-  supabase: SupabaseClient
-): Promise<TaskTag[]> {
-  const { data, error } = await supabase
-    .from("tags")
-    .select("id, name, color")
-    .order("name");
-
-  if (error) {
-    console.error("Error fetching tags:", error);
-    return [];
-  }
-
-  return (data || []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    color: t.color,
-  }));
-}
+export { fetchAllTags as fetchTags } from "./tags";
+export type { AppTag as TaskTag } from "./tags";

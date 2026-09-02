@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Moon, Sun, Search, Menu } from "lucide-react";
+import { Moon, Sun, Search, Menu, Keyboard } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -51,6 +51,13 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
         >
           <Search size={18} />
           <span className="hidden text-xs text-gray-400 sm:inline">⌘K</span>
+        </button>
+        <button
+          onClick={() => document.dispatchEvent(new CustomEvent("open-shortcuts-help"))}
+          className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+          title="Keyboard shortcuts"
+        >
+          <Keyboard size={18} />
         </button>
         <NotificationBell />
         <EnableNotifications />

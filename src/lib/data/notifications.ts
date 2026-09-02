@@ -32,6 +32,7 @@ export async function fetchNotifications(
   options?: {
     unreadOnly?: boolean;
     limit?: number;
+    offset?: number;
   }
 ): Promise<Notification[]> {
   let query = supabase
@@ -39,7 +40,10 @@ export async function fetchNotifications(
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(options?.limit || 50);
+    .range(
+      options?.offset || 0,
+      (options?.offset || 0) + (options?.limit || 50) - 1
+    );
 
   if (options?.unreadOnly) {
     query = query.eq("is_read", false);

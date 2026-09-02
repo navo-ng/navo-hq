@@ -16,6 +16,7 @@ import {
   createDocument,
 } from "@/lib/data/documents";
 import { fetchAllUsers, fetchAllTags } from "@/lib/data/projects";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocDocument[]>([]);
@@ -24,6 +25,7 @@ export default function DocumentsPage() {
   const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -37,31 +39,38 @@ export default function DocumentsPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [docData, statusData, userData, tagData] = await Promise.all([
-        fetchDocuments(supabase, { sort: "newest" }),
-        fetchDocumentStatuses(supabase),
-        fetchAllUsers(supabase),
-        fetchAllTags(supabase),
-      ]);
+      try {
+        const [docData, statusData, userData, tagData] = await Promise.all([
+          fetchDocuments(supabase, { sort: "newest" }),
+          fetchDocumentStatuses(supabase),
+          fetchAllUsers(supabase),
+          fetchAllTags(supabase),
+        ]);
 
-      const { data: projectData } = await supabase
-        .from("projects")
-        .select("id, name")
-        .eq("is_archived", false)
-        .order("name");
+        const { data: projectData } = await supabase
+          .from("projects")
+          .select("id, name")
+          .eq("is_archived", false)
+          .order("name");
 
-      if (!cancelled) {
-        setDocuments(docData);
-        setStatuses(statusData);
-        setUsers(userData);
-        setTags(tagData);
-        setProjects(
-          (projectData || []).map((p: { id: string; name: string }) => ({
-            id: p.id,
-            name: p.name,
-          }))
-        );
-        setIsLoading(false);
+        if (!cancelled) {
+          setDocuments(docData);
+          setStatuses(statusData);
+          setUsers(userData);
+          setTags(tagData);
+          setProjects(
+            (projectData || []).map((p: { id: string; name: string }) => ({
+              id: p.id,
+              name: p.name,
+            }))
+          );
+          setIsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load documents. Please try again.");
+          setIsLoading(false);
+        }
       }
     }
     load();
@@ -190,6 +199,18 @@ export default function DocumentsPage() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your team&apos;s documents</p>
+        </div>
+        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); window.location.reload(); }} />
       </div>
     );
   }

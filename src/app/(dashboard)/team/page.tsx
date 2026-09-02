@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamMember, TeamRole } from "@/types/team";
@@ -80,6 +82,12 @@ export default function TeamPage() {
               Manage your team members and roles
             </p>
           </div>
+          <Link href="/team/invite">
+            <Button className="shrink-0" disabled>
+              <UserPlus size={16} />
+              Invite Member
+            </Button>
+          </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
@@ -112,6 +120,12 @@ export default function TeamPage() {
             Manage your team members and roles
           </p>
         </div>
+        <Link href="/team/invite">
+          <Button className="shrink-0">
+            <UserPlus size={16} />
+            Invite Member
+          </Button>
+        </Link>
       </div>
 
       {members.length === 0 ? (

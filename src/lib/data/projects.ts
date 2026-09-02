@@ -2,7 +2,6 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import {
   Project,
   ProjectStatusConfig,
-  ProjectUser,
   ProjectTaskStats,
   CreateProjectInput,
   UpdateProjectInput,
@@ -497,47 +496,11 @@ export async function removeProjectMember(
   });
 }
 
-export async function fetchAllUsers(
-  supabase: SupabaseClient
-): Promise<ProjectUser[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, name, email, avatar_url")
-    .eq("is_active", true)
-    .order("name");
+export { fetchAllUsers } from "./users";
+export type { AppUser as ProjectUser } from "./users";
 
-  if (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-
-  return (data || []).map((u) => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    avatar_url: u.avatar_url,
-  }));
-}
-
-export async function fetchAllTags(
-  supabase: SupabaseClient
-): Promise<{ id: string; name: string; color: string }[]> {
-  const { data, error } = await supabase
-    .from("tags")
-    .select("id, name, color")
-    .order("name");
-
-  if (error) {
-    console.error("Error fetching tags:", error);
-    return [];
-  }
-
-  return (data || []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    color: t.color,
-  }));
-}
+export { fetchAllTags } from "./tags";
+export type { AppTag } from "./tags";
 
 export async function fetchProjectTasks(
   supabase: SupabaseClient,

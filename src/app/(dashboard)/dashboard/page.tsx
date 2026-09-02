@@ -22,6 +22,7 @@ import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
 import ProjectProgressList from "@/components/dashboard/ProjectProgressList";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -30,24 +31,30 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id);
-      const [taskData, statusData, projectData, activityData] = await Promise.all([
-        fetchTasks(supabase),
-        fetchTaskStatuses(supabase),
-        fetchProjects(supabase),
-        fetchActivities(supabase, { limit: 10 }),
-      ]);
-      setTasks(taskData);
-      setStatuses(statusData);
-      setProjects(projectData);
-      setActivities(activityData);
-      setIsLoading(false);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUserId(user?.id);
+        const [taskData, statusData, projectData, activityData] = await Promise.all([
+          fetchTasks(supabase),
+          fetchTaskStatuses(supabase),
+          fetchProjects(supabase),
+          fetchActivities(supabase, { limit: 10 }),
+        ]);
+        setTasks(taskData);
+        setStatuses(statusData);
+        setProjects(projectData);
+        setActivities(activityData);
+      } catch {
+        setError("Failed to load dashboard data. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     }
     load();
   }, [supabase]);
@@ -85,6 +92,18 @@ export default function DashboardPage() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">One team. One source of truth.</p>
+        </div>
+        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); window.location.reload(); }} />
       </div>
     );
   }

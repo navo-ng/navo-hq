@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { X, Bell, CheckCircle, FileText, AlertTriangle } from "lucide-react";
 import { Notification } from "@/lib/data/notifications";
 import { useRouter } from "next/navigation";
+import { formatRelativeTime } from "@/lib/utils/relative-time";
 
 interface NotificationToastProps {
   notification: Notification | null;
@@ -28,18 +29,6 @@ function getRoute(entityType: string | null, entityId: string | null): string | 
     case "document": return `/documents?id=${entityId}`;
     default: return null;
   }
-}
-
-function formatTimeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  return `${Math.floor(diffHr / 24)}d ago`;
 }
 
 export function NotificationToast({ notification, onDismiss }: NotificationToastProps) {
@@ -79,7 +68,7 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
             </p>
           )}
           <p className="mt-1 text-xs text-gray-400">
-            {formatTimeAgo(notification.created_at)}
+            {formatRelativeTime(notification.created_at)}
           </p>
         </div>
         <button

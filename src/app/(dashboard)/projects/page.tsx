@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/ProjectCard";
@@ -18,6 +18,8 @@ import {
   fetchAllTags,
   createProject,
 } from "@/lib/data/projects";
+import { useRealtimeEntity } from "@/lib/hooks/useRealtimeEntity";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -25,6 +27,7 @@ export default function ProjectsPage() {
   const [users, setUsers] = useState<ProjectUser[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -35,21 +38,40 @@ export default function ProjectsPage() {
 
   const supabase = createClient();
 
+  const refetchProjects = useCallback(async () => {
+    try {
+      const data = await fetchProjects(supabase, { sort: "newest" });
+      setProjects(data);
+      setError(null);
+    } catch {
+      setError("Failed to load projects. Please try again.");
+    }
+  }, [supabase]);
+
+  useRealtimeEntity("projects", null, () => refetchProjects(), () => refetchProjects(), () => refetchProjects());
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [projectData, statusData, userData, tagData] = await Promise.all([
-        fetchProjects(supabase, { sort: "newest" }),
-        fetchProjectStatuses(supabase),
-        fetchAllUsers(supabase),
-        fetchAllTags(supabase),
-      ]);
-      if (!cancelled) {
-        setProjects(projectData);
-        setStatuses(statusData);
-        setUsers(userData);
-        setTags(tagData);
-        setIsLoading(false);
+      try {
+        const [projectData, statusData, userData, tagData] = await Promise.all([
+          fetchProjects(supabase, { sort: "newest" }),
+          fetchProjectStatuses(supabase),
+          fetchAllUsers(supabase),
+          fetchAllTags(supabase),
+        ]);
+        if (!cancelled) {
+          setProjects(projectData);
+          setStatuses(statusData);
+          setUsers(userData);
+          setTags(tagData);
+          setIsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load projects. Please try again.");
+          setIsLoading(false);
+        }
       }
     }
     load();
@@ -180,6 +202,18 @@ export default function ProjectsPage() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Track major initiatives and workstreams</p>
+        </div>
+        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); refetchProjects().finally(() => setIsLoading(false)); }} />
       </div>
     );
   }
