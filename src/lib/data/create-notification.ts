@@ -34,7 +34,7 @@ async function isNotificationTypeEnabled(
     .single();
 
   if (!data) return true;
-  return Boolean(data[field]);
+  return Boolean((data as Record<string, unknown>)[field]);
 }
 
 export async function createNotification({

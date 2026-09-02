@@ -87,5 +87,5 @@ export async function isNotificationEnabled(
     .single();
 
   if (!data) return true;
-  return Boolean(data[field]);
+  return Boolean((data as Record<string, unknown>)[field]);
 }

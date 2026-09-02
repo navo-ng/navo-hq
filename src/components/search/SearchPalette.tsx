@@ -86,8 +86,8 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
     for (const section of sectionConfig) {
       for (const item of results[section.key]) {
         let url: string;
-        if (section.key === "comments" && item.entity_type && item.entity_id) {
-          url = `/tasks?id=${item.entity_id}`;
+        if (section.key === "comments" && "entity_type" in item && "entity_id" in item && item.entity_type && item.entity_id) {
+          url = `/tasks?id=${(item as { entity_id: string }).entity_id}`;
         } else if (section.useIdParam) {
           url = `${section.baseUrl}?id=${item.id}`;
         } else {
