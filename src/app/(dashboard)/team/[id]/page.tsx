@@ -2,10 +2,12 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mail, Calendar, Briefcase } from "lucide-react";
+import { ArrowLeft, Mail, Calendar, Briefcase, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ActivityGraph } from "@/components/team/ActivityGraph";
 import { RoleManager } from "@/components/team/RoleManager";
+import { RemoveMemberDialog } from "@/components/team/RemoveMemberDialog";
 import { TeamMember } from "@/types/team";
 import { ActivityWithUser } from "@/types/activity";
 import { Task } from "@/types/task";
@@ -37,6 +39,7 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -151,6 +154,16 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
               ) : member.role ? (
                 <Badge color="#0064F0">{member.role.name}</Badge>
               ) : null}
+              {isOwner && member.id !== currentUserId && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setRemoveDialogOpen(true)}
+                >
+                  <Trash2 size={14} />
+                  Remove
+                </Button>
+              )}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
@@ -236,6 +249,18 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
       </div>
+
+      {isOwner && member.id !== currentUserId && (
+        <RemoveMemberDialog
+          open={removeDialogOpen}
+          onClose={() => setRemoveDialogOpen(false)}
+          userId={member.id}
+          userName={member.name}
+          onRemoved={() => {
+            window.location.href = "/team";
+          }}
+        />
+      )}
     </div>
   );
 }
