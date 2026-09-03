@@ -45,6 +45,8 @@ export interface Task {
   completed_at: string | null;
   is_archived: boolean;
   sort_order: number;
+  impact_score?: number;
+  effort_score?: number;
   recurrence: string | null;
   recurrence_end_date: string | null;
   created_at: string;
@@ -68,4 +70,6 @@ export interface CreateTaskInput {
   tag_ids?: string[];
   recurrence?: string;
   recurrence_end_date?: string;
+  impact_score?: number;
+  effort_score?: number;
 }

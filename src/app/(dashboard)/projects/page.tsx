@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Plus, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, BarChart3, ChevronDown, ChevronRight, Archive, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { ProjectFilters } from "@/components/projects/ProjectFilters";
 import { ProjectStats } from "@/components/projects/ProjectStats";
@@ -18,8 +19,12 @@ import {
   fetchAllUsers,
   fetchAllTags,
   createProject,
+  archiveProject,
+  updateProject,
 } from "@/lib/data/projects";
 import { useRealtimeEntity } from "@/lib/hooks/useRealtimeEntity";
+import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 import { ErrorState } from "@/components/ui/error-state";
 
 export default function ProjectsPage() {
@@ -37,6 +42,10 @@ export default function ProjectsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
   const [showCharts, setShowCharts] = useState(false);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatusId, setBulkStatusId] = useState("");
+  const { showToast } = useToast();
 
   const supabase = createClient();
 
@@ -175,6 +184,54 @@ export default function ProjectsPage() {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredProjects.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredProjects.map((p) => p.id)));
+    }
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkArchive = async () => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await archiveProject(supabase, id);
+    }
+    showToast({
+      title: MESSAGES.PROJECTS_ARCHIVED.replace("{count}", String(ids.length)),
+      type: "success",
+    });
+    setSelectedIds(new Set());
+    refetchProjects();
+  };
+
+  const handleBulkStatusChange = async () => {
+    if (!bulkStatusId) return;
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await updateProject(supabase, id, { status_id: bulkStatusId });
+    }
+    showToast({ title: MESSAGES.PROJECT_STATUS_CHANGED, type: "success" });
+    setSelectedIds(new Set());
+    setBulkStatusId("");
+    refetchProjects();
+  };
+
+  const isAllSelected =
+    filteredProjects.length > 0 && selectedIds.size === filteredProjects.length;
+  const isPartial = selectedIds.size > 0 && !isAllSelected;
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -289,20 +346,93 @@ export default function ProjectsPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProjects.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onDelete={(p) => {
-                    setProjectToDelete({ id: p.id, name: p.name });
-                    setDeleteDialogOpen(true);
-                  }}
-                />
-              ))}
-            </div>
+            <>
+              <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-800 dark:bg-gray-900">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isPartial;
+                    }}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {selectedIds.size > 0
+                      ? `${selectedIds.size} selected`
+                      : "Select all"}
+                  </span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredProjects.map((project) => (
+                  <div key={project.id} className="relative">
+                    <label
+                      className="absolute left-2 top-2 z-10"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(project.id)}
+                        onChange={() => toggleSelect(project.id)}
+                        className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                      />
+                    </label>
+                    <ProjectCard
+                      project={project}
+                      onDelete={(p) => {
+                        setProjectToDelete({ id: p.id, name: p.name });
+                        setDeleteDialogOpen(true);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </>
+      )}
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {selectedIds.size} project{selectedIds.size !== 1 ? "s" : ""} selected
+            </span>
+
+            <div className="flex items-center gap-2">
+              <Select
+                value={bulkStatusId}
+                onChange={(e) => setBulkStatusId(e.target.value)}
+                placeholder="Change status"
+                options={statuses.map((s) => ({ value: s.id, label: s.name }))}
+              />
+              {bulkStatusId && (
+                <Button size="sm" onClick={handleBulkStatusChange}>
+                  Apply
+                </Button>
+              )}
+            </div>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleBulkArchive}
+            >
+              <Archive size={14} />
+              Archive
+            </Button>
+
+            <button
+              onClick={clearSelection}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
       )}
 
       <CreateProjectDialog

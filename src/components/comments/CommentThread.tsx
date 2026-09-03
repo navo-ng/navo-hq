@@ -11,6 +11,7 @@ import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 import { formatRelativeTime } from "@/lib/utils/relative-time";
 import { notifyMentionedUsers } from "@/lib/utils/mentions";
+import { createNotification } from "@/lib/data/create-notification";
 import { Button } from "@/components/ui/button";
 import { Send, MessageSquare } from "lucide-react";
 
@@ -243,14 +244,44 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
         .eq("id", currentUser)
         .single();
 
+      const actorName = actorProfile?.name || "Someone";
+
       await notifyMentionedUsers(
         supabase,
         text,
         entityType,
         entityId,
         currentUser || "",
-        actorProfile?.name || "Someone"
+        actorName
       );
+
+      const { data: otherCommenters } = await supabase
+        .from("comments")
+        .select("user_id")
+        .eq("entity_type", entityType)
+        .eq("entity_id", entityId)
+        .neq("user_id", currentUser)
+        .order("created_at", { ascending: false });
+
+      const uniqueUserIds = [
+        ...new Set((otherCommenters || []).map((c) => c.user_id)),
+      ];
+
+      for (const uid of uniqueUserIds) {
+        await createNotification({
+          supabase,
+          userId: uid,
+          type: "comment",
+          title: "New comment",
+          message: `${actorName} commented on ${entityType}`,
+          entityType,
+          entityId,
+        });
+      }
+
+      if (uniqueUserIds.length > 0) {
+        showToast({ title: MESSAGES.COMMENT_NOTIFICATION_SENT, type: "success" });
+      }
     } else {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       showToast({ title: MESSAGES.NETWORK_ERROR, type: "error" });

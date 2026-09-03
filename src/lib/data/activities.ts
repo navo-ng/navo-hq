@@ -35,6 +35,10 @@ export async function fetchActivities(
   filters?: {
     entityType?: string;
     entityId?: string;
+    userId?: string;
+    action?: string;
+    dateFrom?: string;
+    dateTo?: string;
     limit?: number;
     offset?: number;
   }
@@ -54,6 +58,22 @@ export async function fetchActivities(
 
   if (filters?.entityId) {
     query = query.eq("entity_id", filters.entityId);
+  }
+
+  if (filters?.userId) {
+    query = query.eq("user_id", filters.userId);
+  }
+
+  if (filters?.action) {
+    query = query.eq("action", filters.action);
+  }
+
+  if (filters?.dateFrom) {
+    query = query.gte("created_at", filters.dateFrom);
+  }
+
+  if (filters?.dateTo) {
+    query = query.lte("created_at", filters.dateTo);
   }
 
   const { data, error } = await query;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText } from "lucide-react";
+import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
@@ -11,6 +11,7 @@ import { TaskFilters, QuickFilter } from "@/components/tasks/TaskFilters";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskDetailDrawer } from "@/components/tasks/TaskDetailDrawer";
 import { TaskBreakdownDialog } from "@/components/tasks/TaskBreakdownDialog";
+import { ScoreMatrixDialog } from "@/components/tasks/ScoreMatrixDialog";
 import { MeetingNotesParser } from "@/components/meetings/MeetingNotesParser";
 import { Task, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
@@ -30,6 +31,9 @@ import { TaskUser, TaskProject, TaskTag } from "@/types/task";
 import { useRealtimeEntity } from "@/lib/hooks/useRealtimeEntity";
 import { ErrorState } from "@/components/ui/error-state";
 import { printTaskReport } from "@/lib/utils/pdf-export";
+import { tasksToCSV, downloadCSV } from "@/lib/utils/csv-export";
+import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -60,6 +64,8 @@ export default function TasksPage() {
   const [createTaskStatusId, setCreateTaskStatusId] = useState<string | null>(null);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [meetingNotesOpen, setMeetingNotesOpen] = useState(false);
+  const [scoreMatrixOpen, setScoreMatrixOpen] = useState(false);
+  const { showToast } = useToast();
 
   const supabase = createClient();
 
@@ -361,6 +367,13 @@ export default function TasksPage() {
     );
   };
 
+  const handleExportCSV = () => {
+    const csv = tasksToCSV(filteredTasks as unknown as Record<string, unknown>[]);
+    const date = new Date().toISOString().split("T")[0];
+    downloadCSV(csv, `navo-tasks-${date}.csv`);
+    showToast({ title: MESSAGES.CSV_EXPORTED, type: "success" });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -422,6 +435,10 @@ export default function TasksPage() {
             <Printer size={16} />
             Print
           </Button>
+          <Button variant="secondary" onClick={handleExportCSV}>
+            <Download size={16} />
+            Export CSV
+          </Button>
           <div className="flex rounded-lg border border-gray-300 dark:border-gray-700">
             <button
               onClick={() => setViewMode("list")}
@@ -453,6 +470,10 @@ export default function TasksPage() {
           <Button variant="secondary" onClick={() => setBreakdownOpen(true)}>
             <Sparkles size={16} />
             Break Down
+          </Button>
+          <Button variant="secondary" onClick={() => setScoreMatrixOpen(true)}>
+            <Target size={16} />
+            Score Matrix
           </Button>
           <Button onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}>
             <Plus size={16} />
@@ -635,6 +656,13 @@ export default function TasksPage() {
       <MeetingNotesParser
         open={meetingNotesOpen}
         onClose={() => setMeetingNotesOpen(false)}
+      />
+
+      <ScoreMatrixDialog
+        open={scoreMatrixOpen}
+        onClose={() => setScoreMatrixOpen(false)}
+        tasks={filteredTasks}
+        onTaskClick={handleTaskClick}
       />
 
       {selectedIds.size > 0 && (

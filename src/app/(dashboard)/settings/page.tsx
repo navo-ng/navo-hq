@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList } from "lucide-react";
+import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList, FileText, Webhook, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TeamSetting, UserSetting } from "@/types/settings";
@@ -136,6 +136,22 @@ export default function SettingsPage() {
           </div>
         </Link>
         <Link
+          href="/settings/templates"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 dark:bg-green-900/20">
+            <FileText size={20} className="text-green-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Project Templates
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Create reusable project templates with predefined tasks
+            </p>
+          </div>
+        </Link>
+        <Link
           href="/settings/custom-fields"
           className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
         >
@@ -164,6 +180,38 @@ export default function SettingsPage() {
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Choose which notifications you receive
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/webhooks"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-900/20">
+            <Webhook size={20} className="text-rose-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Webhooks
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Receive HTTP callbacks for workspace events
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/audit-log"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+            <Shield size={20} className="text-indigo-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Audit Log
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Track all changes in your workspace
             </p>
           </div>
         </Link>

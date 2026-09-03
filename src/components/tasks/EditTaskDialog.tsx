@@ -52,6 +52,8 @@ export function EditTaskDialog({
   );
   const [recurrence, setRecurrence] = useState(task.recurrence || "none");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState(task.recurrence_end_date || "");
+  const [impactScore, setImpactScore] = useState(task.impact_score ?? 3);
+  const [effortScore, setEffortScore] = useState(task.effort_score ?? 3);
   const [errors, setErrors] = useState<{ title?: string }>({});
   const [isSaving, setIsSaving] = useState(false);
   const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
@@ -70,6 +72,8 @@ export function EditTaskDialog({
       setSelectedTags(task.tags?.map((t) => t.id) || []);
       setRecurrence(task.recurrence || "none");
       setRecurrenceEndDate(task.recurrence_end_date || "");
+      setImpactScore(task.impact_score ?? 3);
+      setEffortScore(task.effort_score ?? 3);
       setErrors({});
 
       // Fetch custom fields
@@ -105,6 +109,8 @@ export function EditTaskDialog({
         tag_ids: selectedTags,
         recurrence,
         recurrence_end_date: recurrenceEndDate || null,
+        impact_score: impactScore,
+        effort_score: effortScore,
       });
 
       // Save custom field values
@@ -217,6 +223,61 @@ export function EditTaskDialog({
               onChange={(e) => setRecurrenceEndDate(e.target.value)}
             />
           )}
+        </div>
+
+        <div className="space-y-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Impact Score
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                step={1}
+                value={impactScore}
+                onChange={(e) => setImpactScore(Number(e.target.value))}
+                className="w-full accent-navo-blue"
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500">
+                <span>Low</span>
+                <span className="font-medium text-gray-600 dark:text-gray-300">
+                  {impactScore === 1 && "Low"}
+                  {impactScore === 2 && "Medium-Low"}
+                  {impactScore === 3 && "Medium"}
+                  {impactScore === 4 && "Medium-High"}
+                  {impactScore === 5 && "High"}
+                </span>
+                <span>High</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Effort Score
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                step={1}
+                value={effortScore}
+                onChange={(e) => setEffortScore(Number(e.target.value))}
+                className="w-full accent-navo-blue"
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500">
+                <span>Low</span>
+                <span className="font-medium text-gray-600 dark:text-gray-300">
+                  {effortScore === 1 && "Low"}
+                  {effortScore === 2 && "Medium-Low"}
+                  {effortScore === 3 && "Medium"}
+                  {effortScore === 4 && "Medium-High"}
+                  {effortScore === 5 && "High"}
+                </span>
+                <span>High</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-1">

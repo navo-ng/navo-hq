@@ -41,6 +41,8 @@ function mapTask(row: Record<string, unknown>): Task {
     completed_at: row.completed_at as string | null,
     is_archived: row.is_archived as boolean,
     sort_order: (row.sort_order as number) ?? 0,
+    impact_score: (row.impact_score as number) ?? 3,
+    effort_score: (row.effort_score as number) ?? 3,
     recurrence: (row.recurrence as string) ?? "none",
     recurrence_end_date: (row.recurrence_end_date as string) ?? null,
     created_at: row.created_at as string,
@@ -229,6 +231,8 @@ export async function createTask(
       owner_id: input.owner_id || null,
       project_id: input.project_id || null,
       due_date: input.due_date || null,
+      impact_score: input.impact_score || 3,
+      effort_score: input.effort_score || 3,
       recurrence: input.recurrence || "none",
       recurrence_end_date: input.recurrence_end_date || null,
     })
@@ -417,6 +421,8 @@ export async function updateTask(
     tag_ids?: string[];
     recurrence?: string;
     recurrence_end_date?: string | null;
+    impact_score?: number;
+    effort_score?: number;
   }
 ): Promise<Task | null> {
   const { tag_ids, ...taskData } = input;
