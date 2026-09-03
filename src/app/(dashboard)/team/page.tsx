@@ -13,10 +13,10 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchTeam, fetchRoles } from "@/lib/data/team";
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
-  Owner: "#F59E0B",
-  Admin: "#8B5CF6",
-  Member: "#10B981",
-  Viewer: "#6B7280",
+  owner: "#F59E0B",
+  admin: "#8B5CF6",
+  member: "#10B981",
+  viewer: "#6B7280",
 };
 
 export default function TeamPage() {

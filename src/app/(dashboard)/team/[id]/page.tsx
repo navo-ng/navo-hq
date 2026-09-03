@@ -31,7 +31,7 @@ function getStatusColor(name: string): string {
 
 export default function TeamMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { role: currentUserRole, userId: currentUserId } = useCurrentUser();
+  const { role: currentUserRole, userId: currentUserId, loading: userLoading } = useCurrentUser();
   const isOwner = currentUserRole === "owner";
   const [member, setMember] = useState<TeamMember | null>(null);
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
@@ -77,7 +77,7 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
     return () => { cancelled = true; };
   }, [supabase, id]);
 
-  if (isLoading) {
+  if (isLoading || userLoading) {
     return (
       <div className="space-y-6">
         <div className="h-8 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
