@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 import {
   DecisionUser,
   DecisionStatusConfig,
@@ -84,9 +85,9 @@ export function CreateDecisionDialog({
         tag_ids: selectedTags,
       });
 
-      showToast({ title: "Decision created", type: "success" });
+      showToast({ title: MESSAGES.DECISION_CREATED, type: "success" });
     } catch {
-      showToast({ title: "Failed to save", type: "error" });
+      showToast({ title: MESSAGES.UNKNOWN_ERROR, type: "error" });
     }
 
     resetForm();

@@ -18,6 +18,7 @@ import { logActivity } from "@/lib/data/log-activity";
 import { createNotification } from "@/lib/data/create-notification";
 import { fetchActivities } from "@/lib/data/activities";
 import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 
 interface TaskDetailDrawerProps {
   task: Task | null;
@@ -150,9 +151,14 @@ export function TaskDetailDrawer({
 
       setOwnerOverride(ownerIdValue);
 
-      showToast({ title: "Task reassigned", type: "success" });
+      const assignedName =
+        users.find((u) => u.id === ownerIdValue)?.name || "someone";
+      showToast({
+        title: MESSAGES.TASK_ASSIGNED.replace("{name}", assignedName),
+        type: "success",
+      });
     } catch {
-      showToast({ title: "Failed to reassign task", type: "error" });
+      showToast({ title: MESSAGES.NETWORK_ERROR, type: "error" });
     }
   };
 

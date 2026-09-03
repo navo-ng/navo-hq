@@ -5,11 +5,19 @@ import { Search, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamMember, TeamRole } from "@/types/team";
 import { createClient } from "@/lib/supabase/client";
 import { fetchTeam, fetchRoles } from "@/lib/data/team";
+
+const ROLE_BADGE_COLORS: Record<string, string> = {
+  Owner: "#F59E0B",
+  Admin: "#8B5CF6",
+  Member: "#10B981",
+  Viewer: "#6B7280",
+};
 
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -195,7 +203,20 @@ export default function TeamPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredMembers.map((member) => (
                 <Link key={member.id} href={`/team/${member.id}`}>
-                  <TeamMemberCard member={member} />
+                  <div className="relative">
+                    <TeamMemberCard member={member} />
+                    {member.role && (
+                      <div className="absolute right-3 top-3">
+                        <Badge
+                          color={
+                            ROLE_BADGE_COLORS[member.role.name] || "#6B7280"
+                          }
+                        >
+                          {member.role.name}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>

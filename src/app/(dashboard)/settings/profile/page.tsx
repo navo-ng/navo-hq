@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 
 export default function ProfilePage() {
   const { userId, fullName, role } = useCurrentUser();
+  const { showToast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -64,10 +67,15 @@ export default function ProfilePage() {
     setSaving(true);
     setNameSaved(false);
 
-    await supabase.from("profiles").update({ name: name.trim() }).eq("id", userId);
+    const { error } = await supabase.from("profiles").update({ name: name.trim() }).eq("id", userId);
 
     setSaving(false);
+    if (error) {
+      showToast({ title: MESSAGES.UNKNOWN_ERROR, type: "error" });
+      return;
+    }
     setNameSaved(true);
+    showToast({ title: MESSAGES.PROFILE_UPDATED, type: "success" });
     setTimeout(() => setNameSaved(false), 2000);
   };
 
@@ -76,15 +84,15 @@ export default function ProfilePage() {
     setPasswordSaved(false);
 
     if (!newPassword || !confirmPassword) {
-      setPasswordError("Please fill in all password fields.");
+      setPasswordError(MESSAGES.REQUIRED_FIELD);
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords do not match.");
+      setPasswordError(MESSAGES.PASSWORD_MISMATCH);
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters.");
+      setPasswordError(MESSAGES.PASSWORD_TOO_SHORT);
       return;
     }
 
@@ -100,6 +108,7 @@ export default function ProfilePage() {
 
     setPasswordSaving(false);
     setPasswordSaved(true);
+    showToast({ title: MESSAGES.PASSWORD_CHANGED, type: "success" });
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");

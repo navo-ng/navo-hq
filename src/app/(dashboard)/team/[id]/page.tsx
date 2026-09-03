@@ -5,12 +5,14 @@ import Link from "next/link";
 import { ArrowLeft, Mail, Calendar, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ActivityGraph } from "@/components/team/ActivityGraph";
+import { RoleManager } from "@/components/team/RoleManager";
 import { TeamMember } from "@/types/team";
 import { ActivityWithUser } from "@/types/activity";
 import { Task } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
 import { fetchTeam } from "@/lib/data/team";
 import { fetchActivities } from "@/lib/data/activities";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 function formatJoinDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -29,6 +31,8 @@ function getStatusColor(name: string): string {
 
 export default function TeamMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { role: currentUserRole, userId: currentUserId } = useCurrentUser();
+  const isOwner = currentUserRole === "owner";
   const [member, setMember] = useState<TeamMember | null>(null);
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -130,9 +134,22 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 {member.name}
               </h1>
-              {member.role && (
+              {isOwner && member.id !== currentUserId ? (
+                <RoleManager
+                  userId={member.id}
+                  currentRoleId={member.role_id || ""}
+                  userName={member.name}
+                  isOwner={isOwner}
+                  onRoleChanged={() => {
+                    fetchTeam(supabase).then((teamData) => {
+                      const updated = teamData.find((m) => m.id === id);
+                      if (updated) setMember(updated);
+                    });
+                  }}
+                />
+              ) : member.role ? (
                 <Badge color="#0064F0">{member.role.name}</Badge>
-              )}
+              ) : null}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">

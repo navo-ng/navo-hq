@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { MESSAGES } from "@/lib/utils/messages";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -26,7 +27,7 @@ export default function LoginPage() {
         password,
       });
       if (error) {
-        setError(error.message);
+        setError(MESSAGES.LOGIN_FAILED);
         setLoading(false);
         return;
       }
@@ -41,7 +42,7 @@ export default function LoginPage() {
         },
       });
       if (error) {
-        setError(error.message);
+        setError(MESSAGES.SIGNUP_FAILED);
         setLoading(false);
         return;
       }

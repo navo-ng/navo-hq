@@ -8,6 +8,7 @@ import {
   createComment,
 } from "@/lib/data/comments";
 import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 import { formatRelativeTime } from "@/lib/utils/relative-time";
 import { Button } from "@/components/ui/button";
 import { Send, MessageSquare } from "lucide-react";
@@ -233,10 +234,10 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       setComments((prev) =>
         prev.map((c) => (c.id === optimistic.id ? created : c))
       );
-      showToast({ title: "Comment added", type: "success" });
+      showToast({ title: MESSAGES.COMMENT_POSTED, type: "success" });
     } else {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
-      showToast({ title: "Failed to add comment", type: "error" });
+      showToast({ title: MESSAGES.NETWORK_ERROR, type: "error" });
     }
     setSending(false);
   };

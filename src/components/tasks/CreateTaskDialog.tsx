@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 import { CustomFieldRenderer } from "@/components/ui/CustomFieldRenderer";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -137,9 +138,9 @@ export function CreateTaskDialog({
         recurrence_end_date: recurrenceEndDate,
       });
 
-      showToast({ title: "Task created", type: "success" });
+      showToast({ title: MESSAGES.TASK_CREATED, type: "success" });
     } catch {
-      showToast({ title: "Failed to save", type: "error" });
+      showToast({ title: MESSAGES.TASK_CREATE_FAILED, type: "error" });
     }
 
     resetForm();

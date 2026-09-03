@@ -12,6 +12,8 @@ import {
   removeProjectMemberById,
 } from "@/lib/data/project-permissions";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 
 interface ProjectMembersDialogProps {
   open: boolean;
@@ -48,6 +50,7 @@ export function ProjectMembersDialog({
   const [selectedRole, setSelectedRole] = useState<ProjectRole>("viewer");
   const [isAdding, setIsAdding] = useState(false);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const availableUsers = allUsers.filter(
     (u) => !members.some((m) => m.user_id === u.id)
@@ -58,11 +61,16 @@ export function ProjectMembersDialog({
     setIsAdding(true);
     try {
       await addProjectMemberWithRole(supabase, projectId, selectedUserId, selectedRole);
+      const addedUser = allUsers.find((u) => u.id === selectedUserId);
+      showToast({
+        title: MESSAGES.MEMBER_ADDED.replace("{name}", addedUser?.name || "Member"),
+        type: "success",
+      });
       setSelectedUserId("");
       setSelectedRole("viewer");
       onMembersChanged();
     } catch {
-      // error handled in data layer
+      showToast({ title: MESSAGES.UNKNOWN_ERROR, type: "error" });
     } finally {
       setIsAdding(false);
     }
@@ -74,7 +82,7 @@ export function ProjectMembersDialog({
       await updateMemberRole(supabase, projectId, userId, newRole);
       onMembersChanged();
     } catch {
-      // error handled in data layer
+      showToast({ title: MESSAGES.UNKNOWN_ERROR, type: "error" });
     } finally {
       setUpdatingRoleId(null);
     }
@@ -83,9 +91,14 @@ export function ProjectMembersDialog({
   const handleRemoveMember = async (userId: string) => {
     try {
       await removeProjectMemberById(supabase, projectId, userId);
+      const removedUser = allUsers.find((u) => u.id === userId);
+      showToast({
+        title: MESSAGES.MEMBER_REMOVED.replace("{name}", removedUser?.name || "Member"),
+        type: "success",
+      });
       onMembersChanged();
     } catch {
-      // error handled in data layer
+      showToast({ title: MESSAGES.UNKNOWN_ERROR, type: "error" });
     }
   };
 

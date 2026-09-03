@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 import {
   ProjectUser,
   ProjectStatusConfig,
@@ -74,9 +75,9 @@ export function CreateProjectDialog({
         tag_ids: selectedTags,
       });
 
-      showToast({ title: "Project created", type: "success" });
+      showToast({ title: MESSAGES.PROJECT_CREATED, type: "success" });
     } catch {
-      showToast({ title: "Failed to save", type: "error" });
+      showToast({ title: MESSAGES.PROJECT_CREATE_FAILED, type: "error" });
     }
 
     resetForm();

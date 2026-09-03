@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 import { CustomFieldRenderer } from "@/components/ui/CustomFieldRenderer";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -111,11 +112,11 @@ export function EditTaskDialog({
         await saveCustomFieldValues(supabase, task.id, customFieldValues);
       }
 
-      showToast({ title: "Task updated", type: "success" });
+      showToast({ title: MESSAGES.TASK_UPDATED, type: "success" });
       onUpdated();
       onClose();
     } catch {
-      showToast({ title: "Failed to update task", type: "error" });
+      showToast({ title: MESSAGES.TASK_CREATE_FAILED, type: "error" });
     } finally {
       setIsSaving(false);
     }
