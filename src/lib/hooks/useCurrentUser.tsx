@@ -45,15 +45,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name, role_id, roles(name)")
+        .select("name, role_id")
         .eq("id", authUser.id)
         .single();
 
-      const roles = profile?.roles as { name: UserRole }[] | undefined;
-      const roleName = roles?.[0]?.name ?? null;
+      let roleName: UserRole | null = null;
+
+      if (profile?.role_id) {
+        const { data: roleData } = await supabase
+          .from("roles")
+          .select("name")
+          .eq("id", profile.role_id)
+          .single();
+
+        if (roleData?.name) {
+          roleName = roleData.name.toLowerCase() as UserRole;
+        }
+      }
+
       setUser({
         userId: authUser.id,
-        role: roleName ? (roleName.toLowerCase() as UserRole) : null,
+        role: roleName,
         fullName: profile?.name ?? "",
         loading: false,
       });
