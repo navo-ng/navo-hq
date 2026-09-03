@@ -13,6 +13,7 @@ import { useEffect } from "react";
 interface RoleManagerProps {
   userId: string;
   currentRoleId: string;
+  currentRoleName?: string;
   userName: string;
   isOwner: boolean;
   onRoleChanged: () => void;
@@ -28,6 +29,7 @@ const ROLE_COLORS: Record<string, string> = {
 export function RoleManager({
   userId,
   currentRoleId,
+  currentRoleName: fallbackRoleName,
   userName,
   isOwner,
   onRoleChanged,
@@ -46,7 +48,7 @@ export function RoleManager({
   }, [supabase]);
 
   const currentRoleName =
-    roles.find((r) => r.id === currentRoleId)?.name || "Unknown";
+    roles.find((r) => r.id === currentRoleId)?.name || fallbackRoleName || "Unknown";
 
   const handleRoleSelect = (roleId: string, roleName: string) => {
     if (roleId === currentRoleId) return;

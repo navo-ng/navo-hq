@@ -138,6 +138,7 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
                 <RoleManager
                   userId={member.id}
                   currentRoleId={member.role_id || ""}
+                  currentRoleName={member.role?.name}
                   userName={member.name}
                   isOwner={isOwner}
                   onRoleChanged={() => {

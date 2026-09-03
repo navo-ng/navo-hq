@@ -50,9 +50,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       const roles = profile?.roles as { name: UserRole }[] | undefined;
+      const roleName = roles?.[0]?.name ?? null;
       setUser({
         userId: authUser.id,
-        role: roles?.[0]?.name ?? null,
+        role: roleName ? (roleName.toLowerCase() as UserRole) : null,
         fullName: profile?.name ?? "",
         loading: false,
       });
