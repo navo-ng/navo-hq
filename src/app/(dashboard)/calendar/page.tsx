@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List, Download } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List, Download, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { CreateEventDialog } from "@/components/calendar/CreateEventDialog";
@@ -13,7 +13,8 @@ import {
   updateEvent,
   deleteEvent,
 } from "@/lib/data/calendar";
-import { generateICS, downloadICS } from "@/lib/utils/ics";
+import { generateICS, downloadICS, generateCalendarSubscriptionUrl } from "@/lib/utils/ics";
+import { MESSAGES } from "@/lib/utils/messages";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -37,6 +38,7 @@ export default function CalendarPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -50,6 +52,12 @@ export default function CalendarPage() {
   const supabase = createClient();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
+  }, [supabase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,6 +159,14 @@ export default function CalendarPage() {
     downloadICS(icsContent, "navo-calendar.ics");
   };
 
+  const handleSubscribe = async () => {
+    if (!userId) return;
+    const baseUrl = window.location.origin;
+    const url = generateCalendarSubscriptionUrl(baseUrl, userId);
+    await navigator.clipboard.writeText(url);
+    alert(MESSAGES.CALENDAR_URL_COPIED);
+  };
+
   const monthName = currentDate.toLocaleString("default", { month: "long" });
 
   return (
@@ -171,6 +187,10 @@ export default function CalendarPage() {
         <Button onClick={handleExportICS} variant="secondary" className="shrink-0">
           <Download size={16} />
           Export .ics
+        </Button>
+        <Button onClick={handleSubscribe} variant="secondary" className="shrink-0">
+          <Link size={16} />
+          Subscribe
         </Button>
         <div className="flex shrink-0 items-center rounded-lg border border-gray-200 dark:border-gray-700">
           <button

@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  ClipboardList,
 } from "lucide-react";
 import { useState, useEffect, createContext, useContext } from "react";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
@@ -30,6 +31,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/standup", label: "Standup", icon: ClipboardList },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/team", label: "Team", icon: Users },
   { href: "/decisions", label: "Decisions", icon: Scale },

@@ -50,3 +50,7 @@ export function downloadICS(content: string, filename: string): void {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+export function generateCalendarSubscriptionUrl(baseUrl: string, userId: string): string {
+  return `${baseUrl}/api/calendar/feed?user=${userId}`;
+}

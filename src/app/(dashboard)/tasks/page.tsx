@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List } from "lucide-react";
+import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
@@ -10,6 +10,8 @@ import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 import { TaskFilters, QuickFilter } from "@/components/tasks/TaskFilters";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskDetailDrawer } from "@/components/tasks/TaskDetailDrawer";
+import { TaskBreakdownDialog } from "@/components/tasks/TaskBreakdownDialog";
+import { MeetingNotesParser } from "@/components/meetings/MeetingNotesParser";
 import { Task, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -56,6 +58,8 @@ export default function TasksPage() {
   const [showCharts, setShowCharts] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [createTaskStatusId, setCreateTaskStatusId] = useState<string | null>(null);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [meetingNotesOpen, setMeetingNotesOpen] = useState(false);
 
   const supabase = createClient();
 
@@ -442,6 +446,14 @@ export default function TasksPage() {
               Board
             </button>
           </div>
+          <Button variant="secondary" onClick={() => setMeetingNotesOpen(true)}>
+            <FileText size={16} />
+            Meeting Notes
+          </Button>
+          <Button variant="secondary" onClick={() => setBreakdownOpen(true)}>
+            <Sparkles size={16} />
+            Break Down
+          </Button>
           <Button onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}>
             <Plus size={16} />
             New Task
@@ -613,6 +625,16 @@ export default function TasksPage() {
         onUpdated={handleTaskUpdated}
         statuses={statuses}
         users={users}
+      />
+
+      <TaskBreakdownDialog
+        open={breakdownOpen}
+        onClose={() => setBreakdownOpen(false)}
+      />
+
+      <MeetingNotesParser
+        open={meetingNotesOpen}
+        onClose={() => setMeetingNotesOpen(false)}
       />
 
       {selectedIds.size > 0 && (

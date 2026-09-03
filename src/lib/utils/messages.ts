@@ -33,4 +33,12 @@ export const MESSAGES = {
   PASSWORD_TOO_SHORT: "Password must be at least 6 characters.",
   REQUIRED_FIELD: "This field is required.",
   INVALID_EMAIL: "Please enter a valid email address.",
+  STANDUP_SUBMITTED: "Check-in submitted successfully",
+  STANDUP_UPDATED: "Check-in updated successfully",
+  STANDUP_ERROR: "Failed to submit check-in. Please try again.",
+  CALENDAR_URL_COPIED: "Calendar subscription URL copied to clipboard",
+  WEEKLY_DIGEST_SENT: "Weekly digest sent to {count} team members",
+  TASKS_CREATED_FROM_BREAKDOWN: "{count} tasks created successfully",
+  ACTIONS_EXTRACTED: "{count} action items extracted",
+  AI_BREAKDOWN_ERROR: "Failed to generate breakdown. Please try again.",
 } as const;
