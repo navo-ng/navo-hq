@@ -295,14 +295,14 @@ export async function createProject(
     return null;
   }
 
-  // Add owner as member
-  const memberInserts = [{ project_id: project.id, user_id: input.owner_id, role: "owner" }];
+  // Add owner as member with admin role
+  const memberInserts = [{ project_id: project.id, user_id: input.owner_id, role: "admin" }];
 
-  // Add additional members
+  // Add additional members (default to viewer)
   if (member_ids && member_ids.length > 0) {
     for (const uid of member_ids) {
       if (uid !== input.owner_id) {
-        memberInserts.push({ project_id: project.id, user_id: uid, role: "member" });
+        memberInserts.push({ project_id: project.id, user_id: uid, role: "viewer" });
       }
     }
   }
@@ -416,7 +416,7 @@ export async function addProjectMember(
   supabase: SupabaseClient,
   projectId: string,
   userId: string,
-  role: string = "member"
+  role: string = "viewer"
 ): Promise<void> {
   const { error } = await supabase
     .from("project_members")

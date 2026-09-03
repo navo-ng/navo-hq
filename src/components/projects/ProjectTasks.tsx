@@ -18,7 +18,7 @@ interface ProjectTask {
 
 interface ProjectTasksProps {
   tasks: ProjectTask[];
-  onAddTask: () => void;
+  onAddTask?: () => void;
 }
 
 export function ProjectTasks({ tasks, onAddTask }: ProjectTasksProps) {
@@ -28,12 +28,14 @@ export function ProjectTasks({ tasks, onAddTask }: ProjectTasksProps) {
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
           Tasks
         </h3>
-        <button
-          onClick={onAddTask}
-          className="text-xs font-medium text-navo-blue hover:underline"
-        >
-          + Add task
-        </button>
+        {onAddTask && (
+          <button
+            onClick={onAddTask}
+            className="text-xs font-medium text-navo-blue hover:underline"
+          >
+            + Add task
+          </button>
+        )}
       </div>
 
       {tasks.length === 0 ? (
@@ -41,12 +43,14 @@ export function ProjectTasks({ tasks, onAddTask }: ProjectTasksProps) {
           <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
             No tasks yet
           </p>
-          <button
-            onClick={onAddTask}
-            className="text-xs font-medium text-navo-blue hover:underline"
-          >
-            Add your first task
-          </button>
+          {onAddTask && (
+            <button
+              onClick={onAddTask}
+              className="text-xs font-medium text-navo-blue hover:underline"
+            >
+              Add your first task
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

@@ -46,6 +46,8 @@ import {
 } from "@/lib/data/projects";
 import { fetchTaskStatuses, fetchTaskPriorities, createTask } from "@/lib/data/tasks";
 import { printProjectReport } from "@/lib/utils/pdf-export";
+import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
+import { getUserProjectRole, ProjectRole } from "@/lib/data/project-permissions";
 
 type TabId = "overview" | "tasks";
 
@@ -82,6 +84,8 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
   const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [taskViewMode, setTaskViewMode] = useState<"table" | "gantt">("table");
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<ProjectRole | null>(null);
 
   const supabase = createClient();
 
@@ -108,6 +112,12 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
         if (projectData) {
           const tasks = await fetchProjectTasks(supabase, projectId);
           if (!cancelled) setProjectTasks(tasks);
+
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const role = await getUserProjectRole(supabase, projectId, userData.user.id);
+            if (!cancelled) setCurrentUserRole(role);
+          }
         }
 
         setIsLoading(false);
@@ -171,6 +181,11 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
     }
   };
 
+  const handleMembersChanged = async () => {
+    const updated = await fetchProjectById(supabase, projectId);
+    if (updated) setProject(updated);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -212,6 +227,9 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
     project.target_date &&
     new Date(project.target_date) < new Date() &&
     project.status?.name !== "Completed";
+
+  const isOwnerOrAdmin = currentUserRole === "admin" || currentUserRole === null;
+  const isEditorOrAbove = currentUserRole === "editor" || currentUserRole === "admin" || currentUserRole === null;
 
   const overviewStats = [
     {
@@ -308,61 +326,65 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
             <Printer size={16} />
             Export
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setCreateTaskDialogOpen(true)}
-          >
-            <Plus size={16} />
-            Add Task
-          </Button>
-          <div className="relative">
+          {isEditorOrAbove && (
             <Button
-              variant="ghost"
-              onClick={() => setShowActions(!showActions)}
+              variant="secondary"
+              onClick={() => setCreateTaskDialogOpen(true)}
             >
-              <MoreHorizontal size={16} />
+              <Plus size={16} />
+              Add Task
             </Button>
-            {showActions && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowActions(false)}
-                />
-                <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-800 dark:bg-gray-900">
-                  <button
-                    onClick={() => {
-                      setEditDialogOpen(true);
-                      setShowActions(false);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
-                  >
-                    <Edit3 size={14} />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleArchive();
-                      setShowActions(false);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                  >
-                    <Archive size={14} />
-                    Archive
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDeleteDialogOpen(true);
-                      setShowActions(false);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          )}
+          {isOwnerOrAdmin && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                onClick={() => setShowActions(!showActions)}
+              >
+                <MoreHorizontal size={16} />
+              </Button>
+              {showActions && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowActions(false)}
+                  />
+                  <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+                    <button
+                      onClick={() => {
+                        setEditDialogOpen(true);
+                        setShowActions(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                      <Edit3 size={14} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleArchive();
+                        setShowActions(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    >
+                      <Archive size={14} />
+                      Archive
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteDialogOpen(true);
+                        setShowActions(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 size={14} />
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -428,6 +450,8 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
               allUsers={allUsers}
               onAddMember={handleAddMember}
               onRemoveMember={handleRemoveMember}
+              canManage={currentUserRole === "admin" || currentUserRole === null}
+              onManageClick={() => setMembersDialogOpen(true)}
             />
 
             <div>
@@ -498,7 +522,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
                 Gantt
               </button>
             </div>
-            {taskViewMode === "table" && (
+            {taskViewMode === "table" && isEditorOrAbove && (
               <button
                 onClick={() => setCreateTaskDialogOpen(true)}
                 className="text-xs font-medium text-navo-blue hover:underline"
@@ -554,6 +578,16 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
         onDeleted={() => router.push("/projects")}
+      />
+
+      <ProjectMembersDialog
+        open={membersDialogOpen}
+        onClose={() => setMembersDialogOpen(false)}
+        projectId={projectId}
+        members={project.members || []}
+        allUsers={allUsers}
+        supabase={supabase}
+        onMembersChanged={handleMembersChanged}
       />
     </div>
   );
