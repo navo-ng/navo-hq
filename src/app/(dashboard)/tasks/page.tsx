@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer } from "lucide-react";
+import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
 import { TaskCard } from "@/components/tasks/TaskCard";
+import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 import { TaskFilters, QuickFilter } from "@/components/tasks/TaskFilters";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskDetailDrawer } from "@/components/tasks/TaskDetailDrawer";
@@ -53,6 +54,8 @@ export default function TasksPage() {
   const [batchStatusId, setBatchStatusId] = useState("");
   const [batchOwnerId, setBatchOwnerId] = useState("");
   const [showCharts, setShowCharts] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [createTaskStatusId, setCreateTaskStatusId] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -415,7 +418,31 @@ export default function TasksPage() {
             <Printer size={16} />
             Print
           </Button>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <div className="flex rounded-lg border border-gray-300 dark:border-gray-700">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                viewMode === "list"
+                  ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              <List size={14} />
+              List
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                viewMode === "kanban"
+                  ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              <LayoutGrid size={14} />
+              Board
+            </button>
+          </div>
+          <Button onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}>
             <Plus size={16} />
             New Task
           </Button>
@@ -485,77 +512,93 @@ export default function TasksPage() {
         priorities={priorities}
       />
 
-      {filteredTasks.length > 0 && !isDragDisabled && (
-        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
-          <input
-            type="checkbox"
-            checked={selectedIds.size === filteredTasks.length && filteredTasks.length > 0}
-            onChange={toggleSelectAll}
-            className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
-          />
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {selectedIds.size === 0
-              ? `Select all (${filteredTasks.length})`
-              : `${selectedIds.size} of ${filteredTasks.length} selected`}
-          </span>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {filteredTasks.length === 0 ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
-                ? "No tasks match your filters."
-                : "No tasks yet. Create your first task to get started."}
-            </p>
-          </div>
-        ) : (
-          filteredTasks.map((task) => (
-            <div
-              key={task.id}
-              draggable={!isDragDisabled}
-              onDragStart={(e) => handleDragStart(e, task.id)}
-              onDragOver={(e) => handleDragOver(e, task.id)}
-              onDrop={(e) => handleDrop(e, task.id)}
-              onDragEnd={handleDragEnd}
-              className={`transition-all ${
-                draggedId === task.id ? "opacity-40" : ""
-              } ${overId === task.id && draggedId !== task.id ? "border-2 border-navo-blue rounded-xl" : ""}`}
-            >
-              <div className="flex items-center gap-1">
-                {!isDragDisabled && (
-                  <>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(task.id)}
-                      onChange={() => toggleTaskSelection(task.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-4 w-4 shrink-0 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
-                    />
-                    <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
-                      <GripVertical size={16} />
-                    </div>
-                  </>
-                )}
-                <div className="flex-1 min-w-0">
-                  <TaskCard task={task} onClick={handleTaskClick} />
-                </div>
-              </div>
+      {viewMode === "list" ? (
+        <>
+          {filteredTasks.length > 0 && !isDragDisabled && (
+            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === filteredTasks.length && filteredTasks.length > 0}
+                onChange={toggleSelectAll}
+                className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+              />
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {selectedIds.size === 0
+                  ? `Select all (${filteredTasks.length})`
+                  : `${selectedIds.size} of ${filteredTasks.length} selected`}
+              </span>
             </div>
-          ))
-        )}
-      </div>
+          )}
+
+          <div className="space-y-3">
+            {filteredTasks.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
+                    ? "No tasks match your filters."
+                    : "No tasks yet. Create your first task to get started."}
+                </p>
+              </div>
+            ) : (
+              filteredTasks.map((task) => (
+                <div
+                  key={task.id}
+                  draggable={!isDragDisabled}
+                  onDragStart={(e) => handleDragStart(e, task.id)}
+                  onDragOver={(e) => handleDragOver(e, task.id)}
+                  onDrop={(e) => handleDrop(e, task.id)}
+                  onDragEnd={handleDragEnd}
+                  className={`transition-all ${
+                    draggedId === task.id ? "opacity-40" : ""
+                  } ${overId === task.id && draggedId !== task.id ? "border-2 border-navo-blue rounded-xl" : ""}`}
+                >
+                  <div className="flex items-center gap-1">
+                    {!isDragDisabled && (
+                      <>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(task.id)}
+                          onChange={() => toggleTaskSelection(task.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-4 w-4 shrink-0 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                        />
+                        <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
+                          <GripVertical size={16} />
+                        </div>
+                      </>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <TaskCard task={task} onClick={handleTaskClick} />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      ) : (
+        <KanbanBoard
+          tasks={filteredTasks}
+          statuses={statuses}
+          onTaskClick={handleTaskClick}
+          onTaskMoved={refetchTasks}
+          onCreateTask={(statusId) => {
+            setCreateTaskStatusId(statusId);
+            setCreateDialogOpen(true);
+          }}
+        />
+      )}
 
       <CreateTaskDialog
         open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
+        onClose={() => { setCreateDialogOpen(false); setCreateTaskStatusId(null); }}
         onCreate={handleCreateTask}
         users={users}
         projects={projects}
         tags={tags}
         statuses={statuses}
         priorities={priorities}
+        initialStatusId={createTaskStatusId || undefined}
       />
 
       <TaskDetailDrawer

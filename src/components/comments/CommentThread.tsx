@@ -10,6 +10,7 @@ import {
 import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 import { formatRelativeTime } from "@/lib/utils/relative-time";
+import { notifyMentionedUsers } from "@/lib/utils/mentions";
 import { Button } from "@/components/ui/button";
 import { Send, MessageSquare } from "lucide-react";
 
@@ -235,6 +236,21 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
         prev.map((c) => (c.id === optimistic.id ? created : c))
       );
       showToast({ title: MESSAGES.COMMENT_POSTED, type: "success" });
+
+      const { data: actorProfile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", currentUser)
+        .single();
+
+      await notifyMentionedUsers(
+        supabase,
+        text,
+        entityType,
+        entityId,
+        currentUser || "",
+        actorProfile?.name || "Someone"
+      );
     } else {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       showToast({ title: MESSAGES.NETWORK_ERROR, type: "error" });

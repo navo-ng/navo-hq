@@ -44,6 +44,7 @@ interface CreateTaskDialogProps {
   tags: TaskTag[];
   statuses: TaskStatusConfig[];
   priorities: TaskPriorityConfig[];
+  initialStatusId?: string;
 }
 
 export function CreateTaskDialog({
@@ -55,6 +56,7 @@ export function CreateTaskDialog({
   tags,
   statuses,
   priorities,
+  initialStatusId,
 }: CreateTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -74,6 +76,10 @@ export function CreateTaskDialog({
 
   useEffect(() => {
     if (open) {
+      resetForm();
+      if (initialStatusId) {
+        setStatusId(initialStatusId);
+      }
       const supabase = createClient();
       fetchCustomFieldDefinitions(supabase, "task").then((defs) => {
         setCustomFieldDefs(defs);
@@ -84,7 +90,8 @@ export function CreateTaskDialog({
         setCustomFieldValues(initial);
       });
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialStatusId]);
 
   const handleSelectTemplate = (template: {
     title: string;

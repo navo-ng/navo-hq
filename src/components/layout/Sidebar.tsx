@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/team", label: "Team", icon: Users, roles: ["owner", "admin"] },
+  { href: "/team", label: "Team", icon: Users },
   { href: "/decisions", label: "Decisions", icon: Scale },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/calendar", label: "Calendar", icon: Calendar },

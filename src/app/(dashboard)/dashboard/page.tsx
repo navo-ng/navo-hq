@@ -21,14 +21,17 @@ import { ActivityWithUser } from "@/types/activity";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
 import ProjectProgressList from "@/components/dashboard/ProjectProgressList";
+import { WorkloadView } from "@/components/dashboard/WorkloadView";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
 import { ErrorState } from "@/components/ui/error-state";
+import { fetchAllUsers } from "@/lib/data/users";
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<TaskStatusConfig[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
+  const [members, setMembers] = useState<{ id: string; name: string; avatar_url: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
@@ -40,16 +43,18 @@ export default function DashboardPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setUserId(user?.id);
-        const [taskData, statusData, projectData, activityData] = await Promise.all([
+        const [taskData, statusData, projectData, activityData, memberData] = await Promise.all([
           fetchTasks(supabase),
           fetchTaskStatuses(supabase),
           fetchProjects(supabase),
           fetchActivities(supabase, { limit: 10 }),
+          fetchAllUsers(supabase),
         ]);
         setTasks(taskData);
         setStatuses(statusData);
         setProjects(projectData);
         setActivities(activityData);
+        setMembers(memberData.map((m) => ({ id: m.id, name: m.name, avatar_url: m.avatar_url })));
       } catch {
         setError("Failed to load dashboard data. Please try again.");
       } finally {
@@ -269,6 +274,8 @@ export default function DashboardPage() {
         <TaskStatusChart tasks={tasks} />
         <TaskPriorityChart tasks={tasks} />
       </div>
+
+      <WorkloadView tasks={tasks} members={members} statuses={statuses} />
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-4 flex items-center justify-between">
