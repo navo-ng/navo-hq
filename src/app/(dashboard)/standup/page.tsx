@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchStandups, fetchMyStandup, createStandup, Standup } from "@/lib/data/standups";
 import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
+import { renderMarkdown } from "@/lib/utils/markdown";
 
 export default function StandupPage() {
   const [standups, setStandups] = useState<Standup[]>([]);
@@ -208,7 +209,10 @@ export default function StandupPage() {
                     <Clock size={14} className="mt-0.5 shrink-0 text-navo-blue" />
                     <div>
                       <span className="font-medium text-gray-700 dark:text-gray-300">Doing: </span>
-                      <span className="text-gray-600 dark:text-gray-400">{standup.today_doing}</span>
+                      <div
+                        className="prose prose-sm dark:prose-invert max-w-none inline text-gray-600 dark:text-gray-400"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(standup.today_doing) }}
+                      />
                     </div>
                   </div>
 
@@ -216,7 +220,10 @@ export default function StandupPage() {
                     <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" />
                     <div>
                       <span className="font-medium text-gray-700 dark:text-gray-300">Done: </span>
-                      <span className="text-gray-600 dark:text-gray-400">{standup.today_done}</span>
+                      <div
+                        className="prose prose-sm dark:prose-invert max-w-none inline text-gray-600 dark:text-gray-400"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(standup.today_done) }}
+                      />
                     </div>
                   </div>
 
@@ -225,7 +232,10 @@ export default function StandupPage() {
                       <AlertTriangle size={14} className="mt-0.5 shrink-0 text-red-500" />
                       <div>
                         <span className="font-medium text-gray-700 dark:text-gray-300">Blockers: </span>
-                        <span className="text-gray-600 dark:text-gray-400">{standup.blockers}</span>
+                        <div
+                          className="prose prose-sm dark:prose-invert max-w-none inline text-gray-600 dark:text-gray-400"
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(standup.blockers) }}
+                        />
                       </div>
                     </div>
                   )}

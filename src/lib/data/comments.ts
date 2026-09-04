@@ -2,12 +2,20 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { logActivity } from "./log-activity";
 import { createNotification } from "./create-notification";
 
+export interface CommentAttachment {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+}
+
 export interface Comment {
   id: string;
   user_id: string;
   entity_type: string;
   entity_id: string;
   content: string;
+  attachments: CommentAttachment[];
   is_edited: boolean;
   created_at: string;
   updated_at: string;
@@ -36,6 +44,7 @@ function mapComment(row: Record<string, unknown>): CommentWithUser {
     entity_type: row.entity_type as string,
     entity_id: row.entity_id as string,
     content: row.content as string,
+    attachments: (row.attachments as CommentAttachment[]) || [],
     is_edited: row.is_edited as boolean,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
@@ -74,7 +83,8 @@ export async function createComment(
   supabase: SupabaseClient,
   entityType: string,
   entityId: string,
-  content: string
+  content: string,
+  attachments?: CommentAttachment[]
 ): Promise<CommentWithUser | null> {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
@@ -91,6 +101,7 @@ export async function createComment(
       entity_type: entityType,
       entity_id: entityId,
       content,
+      attachments: attachments || [],
     })
     .select(COMMENT_SELECT)
     .single();

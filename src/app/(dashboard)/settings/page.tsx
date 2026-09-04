@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { TeamSetting, UserSetting } from "@/types/settings";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/lib/hooks/useToast";
+import { ThemeColorPicker } from "@/components/ui/theme-color-picker";
 import {
   fetchTeamSettings,
   updateTeamSetting,
@@ -28,6 +29,7 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState("");
   const [theme, setTheme] = useState("system");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [accentColor, setAccentColor] = useState("blue");
 
   const supabase = createClient();
 
@@ -62,6 +64,14 @@ export default function SettingsPage() {
 
           const notifSetting = userData2.find((s) => s.key === "notifications_enabled");
           if (notifSetting) setNotificationsEnabled(Boolean(notifSetting.value));
+
+          const accentSetting = userData2.find((s) => s.key === "accent_color");
+          if (accentSetting) {
+            const c = String(accentSetting.value).replace(/"/g, "");
+            setAccentColor(c);
+            document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, "").trim();
+            if (c !== "blue") document.documentElement.classList.add(`theme-${c}`);
+          }
         }
       } catch (err) {
         console.error("Failed to load settings:", err);
@@ -101,8 +111,11 @@ export default function SettingsPage() {
       await Promise.all([
         updateUserSetting(supabase, userId, "theme", theme),
         updateUserSetting(supabase, userId, "notifications_enabled", notificationsEnabled),
+        updateUserSetting(supabase, userId, "accent_color", accentColor),
       ]);
       setGlobalTheme(theme);
+      document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, "").trim();
+      if (accentColor !== "blue") document.documentElement.classList.add(`theme-${accentColor}`);
       showToast({ title: "Preferences saved", type: "success" });
     } catch {
       showToast({ title: "Failed to save preferences", type: "error" });
@@ -376,6 +389,12 @@ export default function SettingsPage() {
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
+          </div>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Accent Color
+            </label>
+            <ThemeColorPicker value={accentColor} onChange={setAccentColor} />
           </div>
           <div className="flex items-center justify-between">
             <div>

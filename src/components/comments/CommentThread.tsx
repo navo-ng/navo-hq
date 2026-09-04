@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  CommentAttachment,
   CommentWithUser,
   fetchComments,
   createComment,
@@ -11,9 +12,11 @@ import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 import { formatRelativeTime } from "@/lib/utils/relative-time";
 import { notifyMentionedUsers } from "@/lib/utils/mentions";
+import { renderMarkdown } from "@/lib/utils/markdown";
 import { createNotification } from "@/lib/data/create-notification";
+import { formatFileSize } from "@/lib/data/attachments";
 import { Button } from "@/components/ui/button";
-import { Send, MessageSquare } from "lucide-react";
+import { Send, MessageSquare, Paperclip, X, FileText, Image, File, Download } from "lucide-react";
 
 interface CommentThreadProps {
   entityType: string;
@@ -69,6 +72,13 @@ function parseMentions(text: string): React.ReactNode[] {
   return parts.length > 0 ? parts : [text];
 }
 
+function getFileIcon(fileType?: string) {
+  if (!fileType) return <File size={14} className="text-gray-400" />;
+  if (fileType.startsWith("image/")) return <Image size={14} className="text-blue-500" />;
+  if (fileType === "application/pdf") return <FileText size={14} className="text-red-500" />;
+  return <File size={14} className="text-gray-400" />;
+}
+
 export function CommentThread({ entityType, entityId }: CommentThreadProps) {
   const [comments, setComments] = useState<CommentWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +95,8 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
   const [mentionQuery, setMentionQuery] = useState("");
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredUsers = users.filter((u) =>
     u.name.toLowerCase().includes(mentionQuery.toLowerCase())
@@ -208,10 +220,37 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const uploadPendingFiles = async (): Promise<CommentAttachment[]> => {
+    if (pendingFiles.length === 0) return [];
+    const uploaded: CommentAttachment[] = [];
+    for (const file of pendingFiles) {
+      const filePath = `comment-attachments/${entityType}/${entityId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("attachments")
+        .upload(filePath, file);
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        continue;
+      }
+      const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(filePath);
+      uploaded.push({
+        name: file.name,
+        url: urlData.publicUrl,
+        size: file.size,
+        type: file.type,
+      });
+    }
+    return uploaded;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = newComment.trim();
-    if (!text || sending) return;
+    if ((!text && pendingFiles.length === 0) || sending) return;
+
+    setSending(true);
+
+    const attachments = await uploadPendingFiles();
 
     const optimistic: CommentWithUser = {
       id: `temp-${Date.now()}`,
@@ -219,6 +258,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       entity_type: entityType,
       entity_id: entityId,
       content: text,
+      attachments,
       is_edited: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -229,9 +269,9 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
 
     setComments((prev) => [...prev, optimistic]);
     setNewComment("");
-    setSending(true);
+    setPendingFiles([]);
 
-    const created = await createComment(supabase, entityType, entityId, text);
+    const created = await createComment(supabase, entityType, entityId, text, attachments);
     if (created) {
       setComments((prev) =>
         prev.map((c) => (c.id === optimistic.id ? created : c))
@@ -327,9 +367,30 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
                       {comment.is_edited && " (edited)"}
                     </span>
                   </div>
-                  <p className="mt-0.5 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400">
-                    {parseMentions(comment.content)}
-                  </p>
+                  <div
+                    className="mt-0.5 prose prose-sm dark:prose-invert max-w-none text-sm text-gray-600 dark:text-gray-400"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(comment.content) }}
+                  />
+                  {comment.attachments && comment.attachments.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {comment.attachments.map((att, i) => (
+                        <a
+                          key={i}
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                        >
+                          {getFileIcon(att.type)}
+                          <span className="max-w-[140px] truncate">{att.name}</span>
+                          {att.size != null && (
+                            <span className="text-gray-400">{formatFileSize(att.size)}</span>
+                          )}
+                          <Download size={10} className="text-gray-400" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -340,12 +401,33 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
 
       <form onSubmit={handleSubmit} className="relative flex gap-2">
         <div className="relative flex-1">
+          {pendingFiles.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {pendingFiles.map((file, i) => (
+                <div
+                  key={i}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                >
+                  {getFileIcon(file.type)}
+                  <span className="max-w-[120px] truncate">{file.name}</span>
+                  <span className="text-gray-400">{formatFileSize(file.size)}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="ml-0.5 rounded-full p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             value={newComment}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
-            placeholder="Write a comment... Use @ to mention"
+            placeholder="Write a comment... Use @ to mention, **bold**, *italic*, `code`"
             disabled={sending}
             rows={1}
             className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-800 dark:text-white disabled:opacity-50"
@@ -385,11 +467,33 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
             </div>
           )}
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          onChange={(e) => {
+            if (e.target.files) {
+              setPendingFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+            }
+            e.target.value = "";
+          }}
+          className="hidden"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={sending}
+          title="Attach files"
+        >
+          <Paperclip size={14} />
+        </Button>
         <Button
           type="submit"
           variant="primary"
           size="sm"
-          disabled={!newComment.trim() || sending}
+          disabled={(!newComment.trim() && pendingFiles.length === 0) || sending}
         >
           <Send size={14} />
         </Button>
