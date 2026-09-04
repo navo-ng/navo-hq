@@ -8,34 +8,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
   }
 
-  // Use the auth header to verify the caller is the owner
+  // Verify caller is authenticated
   const authHeader = req.headers.get("authorization");
-  const supabaseAnon = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   const token = authHeader?.replace("Bearer ", "");
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabaseAnon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const { data: { user: caller } } = await supabaseAnon.auth.getUser(token);
   if (!caller) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Use service role for all DB operations (bypasses RLS)
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   // Check caller is owner
-  const { data: callerProfile } = await supabaseAnon
+  const { data: callerProfile } = await supabaseAdmin
     .from("profiles")
     .select("role_id")
     .eq("id", caller.id)
     .single();
 
-  const { data: callerRole } = await supabaseAnon
+  if (!callerProfile?.role_id) {
+    return NextResponse.json({ error: "Only owners can remove members" }, { status: 403 });
+  }
+
+  const { data: callerRole } = await supabaseAdmin
     .from("roles")
     .select("name")
-    .eq("id", callerProfile?.role_id)
+    .eq("id", callerProfile.role_id)
     .single();
 
   if (callerRole?.name !== "owner") {
@@ -47,13 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Can't remove yourself" }, { status: 400 });
   }
 
-  // Use service role to delete the auth user (cascades to profile)
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  // First delete profile explicitly (RLS won't apply with service role)
+  // Delete profile first
   await supabaseAdmin.from("profiles").delete().eq("id", targetUserId);
 
   // Then delete auth user
