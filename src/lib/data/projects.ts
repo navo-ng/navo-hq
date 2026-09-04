@@ -85,19 +85,25 @@ function mapProject(row: Record<string, unknown>): Project {
 
 function computeTaskStats(
   tasks: { status_id: string; due_date: string | null; completed_at: string | null }[],
-  doneStatusId: string
+  doneStatusId: string,
+  inProgressStatusId?: string,
+  blockedStatusId?: string
 ): ProjectTaskStats {
   const now = new Date();
   let total = 0;
   let done = 0;
-  const in_progress = 0;
-  const blocked = 0;
+  let in_progress = 0;
+  let blocked = 0;
   let overdue = 0;
 
   for (const t of tasks) {
     total++;
     if (t.status_id === doneStatusId) {
       done++;
+    } else if (inProgressStatusId && t.status_id === inProgressStatusId) {
+      in_progress++;
+    } else if (blockedStatusId && t.status_id === blockedStatusId) {
+      blocked++;
     }
     if (t.due_date && new Date(t.due_date) < now && t.status_id !== doneStatusId) {
       overdue++;
@@ -153,7 +159,7 @@ export async function fetchProjects(
   const projectIds = projects.map((p) => p.id);
   if (projectIds.length === 0) return projects;
 
-  const [taskRows, doneStatus] = await Promise.all([
+  const [taskRows, doneStatus, inProgressStatus, blockedStatus] = await Promise.all([
     supabase
       .from("tasks")
       .select("project_id, status_id, due_date, completed_at")
@@ -164,9 +170,21 @@ export async function fetchProjects(
       .select("id")
       .eq("name", "Done")
       .single(),
+    supabase
+      .from("task_statuses")
+      .select("id")
+      .eq("name", "In Progress")
+      .single(),
+    supabase
+      .from("task_statuses")
+      .select("id")
+      .eq("name", "Blocked")
+      .single(),
   ]);
 
   const doneStatusId = doneStatus.data?.id || "";
+  const inProgressStatusId = inProgressStatus.data?.id;
+  const blockedStatusId = blockedStatus.data?.id;
 
   if (taskRows.data) {
     const taskMap = new Map<
@@ -181,7 +199,9 @@ export async function fetchProjects(
     for (const project of projects) {
       project.task_stats = computeTaskStats(
         taskMap.get(project.id) || [],
-        doneStatusId
+        doneStatusId,
+        inProgressStatusId,
+        blockedStatusId
       );
     }
   }
@@ -224,7 +244,7 @@ export async function fetchProjectById(
   const project = mapProject(data);
 
   // Fetch task stats
-  const [taskRows, doneStatus] = await Promise.all([
+  const [taskRows, doneStatus, inProgressStatus, blockedStatus] = await Promise.all([
     supabase
       .from("tasks")
       .select("status_id, due_date, completed_at")
@@ -235,11 +255,23 @@ export async function fetchProjectById(
       .select("id")
       .eq("name", "Done")
       .single(),
+    supabase
+      .from("task_statuses")
+      .select("id")
+      .eq("name", "In Progress")
+      .single(),
+    supabase
+      .from("task_statuses")
+      .select("id")
+      .eq("name", "Blocked")
+      .single(),
   ]);
 
   const doneStatusId = doneStatus.data?.id || "";
+  const inProgressStatusId = inProgressStatus.data?.id;
+  const blockedStatusId = blockedStatus.data?.id;
   if (taskRows.data) {
-    project.task_stats = computeTaskStats(taskRows.data, doneStatusId);
+    project.task_stats = computeTaskStats(taskRows.data, doneStatusId, inProgressStatusId, blockedStatusId);
   }
 
   return project;

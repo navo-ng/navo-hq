@@ -7,6 +7,7 @@ import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { CreateEventDialog } from "@/components/calendar/CreateEventDialog";
 import { CalendarEvent, CreateCalendarEventInput, UpdateCalendarEventInput } from "@/types/calendar";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/lib/hooks/useToast";
 import {
   fetchEventsForMonth,
   createEvent,
@@ -31,6 +32,7 @@ function formatDateKey(year: number, month: number, day: number): string {
 }
 
 export default function CalendarPage() {
+  const { showToast } = useToast();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -164,7 +166,7 @@ export default function CalendarPage() {
     const baseUrl = window.location.origin;
     const url = generateCalendarSubscriptionUrl(baseUrl, userId);
     await navigator.clipboard.writeText(url);
-    alert(MESSAGES.CALENDAR_URL_COPIED);
+    showToast({ title: MESSAGES.CALENDAR_URL_COPIED, type: "success" });
   };
 
   const monthName = currentDate.toLocaleString("default", { month: "long" });

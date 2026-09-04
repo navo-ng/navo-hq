@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -18,6 +19,9 @@ import {
   X,
   ClipboardList,
   BarChart3,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { useState, useEffect, createContext, useContext } from "react";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
@@ -114,6 +118,15 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { mobileOpen, setMobileOpen } = useSidebar();
   const { role } = useCurrentUser();
+  const { theme, setTheme } = useTheme();
+
+  const cycleTheme = () => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  };
+
+  const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
 
   const visibleItems = navItems.filter(
     (item) => !item.roles || (role && item.roles.includes(role))
@@ -167,6 +180,17 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <div className="border-t border-gray-200 p-2 dark:border-gray-800">
+          <button
+            onClick={cycleTheme}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+            title={collapsed ? `Theme: ${theme}` : undefined}
+          >
+            <ThemeIcon size={18} />
+            {!collapsed && <span className="capitalize">{theme}</span>}
+          </button>
+        </div>
       </aside>
 
       {mobileOpen && (
@@ -197,6 +221,16 @@ export function Sidebar() {
               pathname={pathname}
               onNavigate={() => setMobileOpen(false)}
             />
+
+            <div className="border-t border-gray-200 p-2 dark:border-gray-800">
+              <button
+                onClick={cycleTheme}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              >
+                <ThemeIcon size={18} />
+                <span className="capitalize">{theme}</span>
+              </button>
+            </div>
           </aside>
         </div>
       )}

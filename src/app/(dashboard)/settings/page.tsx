@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList, FileText, Webhook, Shield, CircleDot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TeamSetting, UserSetting } from "@/types/settings";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/lib/hooks/useToast";
 import {
   fetchTeamSettings,
   updateTeamSetting,
@@ -15,6 +17,8 @@ import {
 } from "@/lib/data/settings";
 
 export default function SettingsPage() {
+  const { theme: activeTheme, setTheme: setGlobalTheme } = useTheme();
+  const { showToast } = useToast();
   const [teamSettings, setTeamSettings] = useState<TeamSetting[]>([]);
   const [userSettings, setUserSettings] = useState<UserSetting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +52,11 @@ export default function SettingsPage() {
         if (tzSetting) setTimezone(String(tzSetting.value));
 
         const themeSetting = userData2.find((s) => s.key === "theme");
-        if (themeSetting) setTheme(String(themeSetting.value));
+        if (themeSetting) {
+          const t = String(themeSetting.value);
+          setTheme(t);
+          setGlobalTheme(t);
+        }
 
         const notifSetting = userData2.find((s) => s.key === "notifications_enabled");
         if (notifSetting) setNotificationsEnabled(Boolean(notifSetting.value));
@@ -60,15 +68,21 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, [supabase, setGlobalTheme]);
 
   const handleSaveTeamSettings = async () => {
     setSaving(true);
-    await Promise.all([
-      updateTeamSetting(supabase, "company_name", companyName),
-      updateTeamSetting(supabase, "timezone", timezone),
-    ]);
-    setSaving(false);
+    try {
+      await Promise.all([
+        updateTeamSetting(supabase, "company_name", companyName),
+        updateTeamSetting(supabase, "timezone", timezone),
+      ]);
+      showToast({ title: "Team settings saved", type: "success" });
+    } catch {
+      showToast({ title: "Failed to save team settings", type: "error" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveUserSettings = async () => {
@@ -77,11 +91,18 @@ export default function SettingsPage() {
     if (!userId) return;
 
     setSaving(true);
-    await Promise.all([
-      updateUserSetting(supabase, userId, "theme", theme),
-      updateUserSetting(supabase, userId, "notifications_enabled", notificationsEnabled),
-    ]);
-    setSaving(false);
+    try {
+      await Promise.all([
+        updateUserSetting(supabase, userId, "theme", theme),
+        updateUserSetting(supabase, userId, "notifications_enabled", notificationsEnabled),
+      ]);
+      setGlobalTheme(theme);
+      showToast({ title: "Preferences saved", type: "success" });
+    } catch {
+      showToast({ title: "Failed to save preferences", type: "error" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -290,7 +311,10 @@ export default function SettingsPage() {
             </label>
             <select
               value={theme}
-              onChange={(e) => setTheme(e.target.value)}
+              onChange={(e) => {
+                setTheme(e.target.value);
+                setGlobalTheme(e.target.value);
+              }}
               className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             >
               <option value="system">System</option>

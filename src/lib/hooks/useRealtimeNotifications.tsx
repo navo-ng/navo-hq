@@ -136,10 +136,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 function getNotificationUrl(entityType: string | null, entityId: string | null): string | null {
   if (!entityType || !entityId) return null;
   switch (entityType) {
-    case "task": return `/tasks?id=${entityId}`;
+    case "task": return `/tasks`;
     case "project": return `/projects/${entityId}`;
-    case "decision": return `/decisions?id=${entityId}`;
-    case "document": return `/documents?id=${entityId}`;
+    case "decision": return `/decisions/${entityId}`;
+    case "document": return `/documents/${entityId}`;
     default: return null;
   }
 }

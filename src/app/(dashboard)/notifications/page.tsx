@@ -37,9 +37,9 @@ function getRoute(entityType: string | null, entityId: string | null): string | 
     case "project":
       return `/projects/${entityId}`;
     case "decision":
-      return `/decisions?id=${entityId}`;
+      return `/decisions/${entityId}`;
     case "document":
-      return `/documents?id=${entityId}`;
+      return `/documents/${entityId}`;
     default:
       return null;
   }

@@ -258,7 +258,7 @@ export async function updateDocument(
   documentId: string,
   input: Partial<Pick<DocDocument, "title" | "description" | "category" | "owner_id" | "project_id" | "status_id">>
 ): Promise<DocDocument | null> {
-  const update: Record<string, unknown> = {};
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.title !== undefined) update.title = input.title;
   if (input.description !== undefined) update.description = input.description || null;
   if (input.category !== undefined) update.category = input.category || null;

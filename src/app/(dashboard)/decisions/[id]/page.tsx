@@ -49,20 +49,25 @@ export default function DecisionDetailPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!cancelled && userData.user) {
-        setCurrentUserId(userData.user.id);
-      }
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!cancelled && userData.user) {
+          setCurrentUserId(userData.user.id);
+        }
 
-      const [decisionData, voteData] = await Promise.all([
-        fetchDecisionById(supabase, decisionId),
-        fetchDecisionVotes(supabase, decisionId),
-      ]);
+        const [decisionData, voteData] = await Promise.all([
+          fetchDecisionById(supabase, decisionId),
+          fetchDecisionVotes(supabase, decisionId),
+        ]);
 
-      if (!cancelled) {
-        setDecision(decisionData);
-        setVotes(voteData);
-        setIsLoading(false);
+        if (!cancelled) {
+          setDecision(decisionData);
+          setVotes(voteData);
+        }
+      } catch (err) {
+        console.error("Failed to load decision:", err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
     load();
@@ -171,13 +176,7 @@ export default function DecisionDetailPage() {
                       {c.contribution}
                     </p>
                   )}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-        <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
-          Comments
-        </h3>
-        <CommentThread entityType="decision" entityId={decisionId} />
-      </div>
-    </div>
+                </div>
               </div>
             ))}
           </div>

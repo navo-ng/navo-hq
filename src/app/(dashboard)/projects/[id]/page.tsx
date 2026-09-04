@@ -92,35 +92,39 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [projectData, statusData, userData, tagData, taskStatusData, taskPriorityData] =
-        await Promise.all([
-          fetchProjectById(supabase, projectId),
-          fetchProjectStatuses(supabase),
-          fetchAllUsers(supabase),
-          fetchAllTags(supabase),
-          fetchTaskStatuses(supabase),
-          fetchTaskPriorities(supabase),
-        ]);
-      if (!cancelled) {
-        setProject(projectData);
-        setStatuses(statusData);
-        setAllUsers(userData);
-        setTags(tagData);
-        setTaskStatuses(taskStatusData);
-        setTaskPriorities(taskPriorityData);
+      try {
+        const [projectData, statusData, userData, tagData, taskStatusData, taskPriorityData] =
+          await Promise.all([
+            fetchProjectById(supabase, projectId),
+            fetchProjectStatuses(supabase),
+            fetchAllUsers(supabase),
+            fetchAllTags(supabase),
+            fetchTaskStatuses(supabase),
+            fetchTaskPriorities(supabase),
+          ]);
+        if (!cancelled) {
+          setProject(projectData);
+          setStatuses(statusData);
+          setAllUsers(userData);
+          setTags(tagData);
+          setTaskStatuses(taskStatusData);
+          setTaskPriorities(taskPriorityData);
 
-        if (projectData) {
-          const tasks = await fetchProjectTasks(supabase, projectId);
-          if (!cancelled) setProjectTasks(tasks);
+          if (projectData) {
+            const tasks = await fetchProjectTasks(supabase, projectId);
+            if (!cancelled) setProjectTasks(tasks);
 
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const role = await getUserProjectRole(supabase, projectId, userData.user.id);
-            if (!cancelled) setCurrentUserRole(role);
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const role = await getUserProjectRole(supabase, projectId, userData.user.id);
+              if (!cancelled) setCurrentUserRole(role);
+            }
           }
         }
-
-        setIsLoading(false);
+      } catch (err) {
+        console.error("Failed to load project:", err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
     load();

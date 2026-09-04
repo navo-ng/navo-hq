@@ -61,31 +61,36 @@ export default function DocumentDetailPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [docData, statusData, userData, tagData] = await Promise.all([
-        fetchDocumentById(supabase, documentId),
-        fetchDocumentStatuses(supabase),
-        fetchAllUsers(supabase),
-        fetchAllTags(supabase),
-      ]);
+      try {
+        const [docData, statusData, userData, tagData] = await Promise.all([
+          fetchDocumentById(supabase, documentId),
+          fetchDocumentStatuses(supabase),
+          fetchAllUsers(supabase),
+          fetchAllTags(supabase),
+        ]);
 
-      const { data: projectData } = await supabase
-        .from("projects")
-        .select("id, name")
-        .eq("is_archived", false)
-        .order("name");
+        const { data: projectData } = await supabase
+          .from("projects")
+          .select("id, name")
+          .eq("is_archived", false)
+          .order("name");
 
-      if (!cancelled) {
-        setDocument(docData);
-        setStatuses(statusData);
-        setUsers(userData);
-        setTags(tagData);
-        setProjects(
-          (projectData || []).map((p: { id: string; name: string }) => ({
-            id: p.id,
-            name: p.name,
-          }))
-        );
-        setIsLoading(false);
+        if (!cancelled) {
+          setDocument(docData);
+          setStatuses(statusData);
+          setUsers(userData);
+          setTags(tagData);
+          setProjects(
+            (projectData || []).map((p: { id: string; name: string }) => ({
+              id: p.id,
+              name: p.name,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load document:", err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
     load();
