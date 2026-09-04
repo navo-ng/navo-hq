@@ -12,9 +12,11 @@ import {
   TimeEntry,
 } from "@/lib/data/time-entries";
 import { Clock, Trash2, Plus } from "lucide-react";
+import { Task } from "@/types/task";
 
 interface TimeTrackerProps {
   taskId: string;
+  task: Task;
 }
 
 function formatDuration(totalMinutes: number): string {
@@ -25,7 +27,7 @@ function formatDuration(totalMinutes: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-export function TimeTracker({ taskId }: TimeTrackerProps) {
+export function TimeTracker({ taskId, task }: TimeTrackerProps) {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [totalMinutes, setTotalMinutes] = useState(0);
   const [showForm, setShowForm] = useState(false);
@@ -33,7 +35,53 @@ export function TimeTracker({ taskId }: TimeTrackerProps) {
   const [minutes, setMinutes] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerStart, setTimerStart] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const supabase = createClient();
+
+  useEffect(() => {
+    if (task?.active_timer_start) {
+      setTimerRunning(true);
+      setTimerStart(task.active_timer_start);
+      const start = new Date(task.active_timer_start).getTime();
+      setElapsed(Math.floor((Date.now() - start) / 1000));
+    }
+  }, [task?.active_timer_start]);
+
+  useEffect(() => {
+    if (!timerRunning || !timerStart) return;
+    const interval = setInterval(() => {
+      const start = new Date(timerStart).getTime();
+      setElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerRunning, timerStart]);
+
+  const handleStartTimer = async () => {
+    const now = new Date().toISOString();
+    await supabase.from("tasks").update({ active_timer_start: now }).eq("id", taskId);
+    setTimerRunning(true);
+    setTimerStart(now);
+    setElapsed(0);
+  };
+
+  const handleStopTimer = async () => {
+    const minutesTracked = Math.max(1, Math.round(elapsed / 60));
+    await supabase.from("tasks").update({ active_timer_start: null }).eq("id", taskId);
+    await logTime(supabase, taskId, minutesTracked, "Timer entry");
+    setTimerRunning(false);
+    setTimerStart(null);
+    setElapsed(0);
+    window.location.reload();
+  };
+
+  const formatElapsed = (totalSeconds: number) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +145,36 @@ export function TimeTracker({ taskId }: TimeTrackerProps) {
           <Plus size={14} />
           Log Time
         </Button>
+      </div>
+
+      <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Timer</p>
+            {timerRunning ? (
+              <p className="font-mono text-2xl font-bold text-navo-blue">{formatElapsed(elapsed)}</p>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">Start tracking time</p>
+            )}
+          </div>
+          <div>
+            {timerRunning ? (
+              <button
+                onClick={handleStopTimer}
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleStartTimer}
+                className="rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep"
+              >
+                Start Timer
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {showForm && (

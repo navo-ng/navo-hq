@@ -439,7 +439,7 @@ export function TaskDetailDrawer({
             <Clock size={14} />
             Time Tracking
           </div>
-          <TimeTracker taskId={localTask.id} />
+          <TimeTracker taskId={localTask.id} task={localTask} />
         </div>
       </div>
 

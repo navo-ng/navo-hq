@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target, CheckSquare } from "lucide-react";
+import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target, CheckSquare, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
@@ -12,6 +12,8 @@ import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskDetailDrawer } from "@/components/tasks/TaskDetailDrawer";
 import { TaskBreakdownDialog } from "@/components/tasks/TaskBreakdownDialog";
 import { ScoreMatrixDialog } from "@/components/tasks/ScoreMatrixDialog";
+import { BulkEditDialog } from "@/components/tasks/BulkEditDialog";
+import { ImportTasksDialog } from "@/components/tasks/ImportTasksDialog";
 import { MeetingNotesParser } from "@/components/meetings/MeetingNotesParser";
 import { Task, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
@@ -65,6 +67,8 @@ export default function TasksPage() {
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [meetingNotesOpen, setMeetingNotesOpen] = useState(false);
   const [scoreMatrixOpen, setScoreMatrixOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const { showToast } = useToast();
 
   const supabase = createClient();
@@ -439,6 +443,10 @@ export default function TasksPage() {
             <Download size={16} />
             Export CSV
           </Button>
+          <Button variant="secondary" onClick={() => setImportOpen(true)}>
+            <Upload size={16} />
+            Import CSV
+          </Button>
           <div className="flex rounded-lg border border-gray-300 dark:border-gray-700">
             <button
               onClick={() => setViewMode("list")}
@@ -684,6 +692,22 @@ export default function TasksPage() {
         onTaskClick={handleTaskClick}
       />
 
+      <ImportTasksDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => window.location.reload()}
+      />
+
+      <BulkEditDialog
+        open={bulkEditOpen}
+        onClose={() => setBulkEditOpen(false)}
+        taskIds={Array.from(selectedIds)}
+        onUpdated={() => {
+          setSelectedIds(new Set());
+          refetchTasks();
+        }}
+      />
+
       {selectedIds.size > 0 && (
         <div className="fixed bottom-20 left-1/2 z-40 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:bottom-6 sm:w-auto sm:max-w-none">
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -720,6 +744,9 @@ export default function TasksPage() {
                 </option>
               ))}
             </select>
+            <Button variant="secondary" size="sm" onClick={() => setBulkEditOpen(true)}>
+              Edit
+            </Button>
             <Button variant="danger" size="sm" onClick={handleBatchArchive}>
               Archive
             </Button>

@@ -625,7 +625,7 @@ export async function archiveTask(
 export async function batchUpdateTasks(
   supabase: SupabaseClient,
   taskIds: string[],
-  updates: { status_id?: string; owner_id?: string; is_archived?: boolean }
+  updates: { status_id?: string; owner_id?: string; priority_id?: string; is_archived?: boolean }
 ): Promise<void> {
   const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (updates.status_id !== undefined) {
@@ -634,6 +634,7 @@ export async function batchUpdateTasks(
     payload.completed_at = updates.status_id === doneId ? new Date().toISOString() : null;
   }
   if (updates.owner_id !== undefined) payload.owner_id = updates.owner_id;
+  if (updates.priority_id !== undefined) payload.priority_id = updates.priority_id;
   if (updates.is_archived !== undefined) payload.is_archived = updates.is_archived;
 
   const { error } = await supabase
