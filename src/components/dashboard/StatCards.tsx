@@ -8,9 +8,31 @@ interface StatCardsProps {
   tasks: Task[];
   statuses: TaskStatusConfig[];
   projects: Project[];
+  isLoading?: boolean;
 }
 
-export default function StatCards({ tasks, statuses, projects }: StatCardsProps) {
+export default function StatCards({ tasks, statuses, projects, isLoading = false }: StatCardsProps) {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+          >
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-3 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-7 w-10 rounded bg-gray-200 dark:bg-gray-700" />
+              </div>
+              <div className="h-9 w-9 rounded-lg bg-gray-200 dark:bg-gray-700" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const now = new Date();
   const doneId = statuses.find((s) => s.name === "Done")?.id || "";
 

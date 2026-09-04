@@ -15,7 +15,8 @@ import {
   Legend,
 } from "recharts";
 import ReportTabs from "@/components/reports/ReportTabs";
-import { TrendingUp, Award, Zap } from "lucide-react";
+import { TrendingUp, Award, Zap, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/utils/csv-export";
 
 interface RawTask {
   completed_at: string | null;
@@ -147,6 +148,13 @@ export default function VelocityPage() {
     return streak;
   }, [weeklyData]);
 
+  const handleExport = () => {
+    const headers = ["Week", "Tasks Completed", "Tasks Created"];
+    const rows = weeklyData.map((w) => [w.week, String(w.completed), String(w.created)]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    downloadCSV(csv, "velocity-report.csv");
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -172,6 +180,16 @@ export default function VelocityPage() {
       </div>
 
       <ReportTabs />
+
+      <div className="flex items-center justify-end">
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+        >
+          <Download size={14} />
+          Export CSV
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">

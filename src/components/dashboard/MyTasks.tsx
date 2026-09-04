@@ -8,9 +8,35 @@ interface MyTasksProps {
   tasks: Task[];
   statuses: TaskStatusConfig[];
   userId?: string;
+  isLoading?: boolean;
 }
 
-export default function MyTasks({ tasks, statuses, userId }: MyTasksProps) {
+export default function MyTasks({ tasks, statuses, userId, isLoading = false }: MyTasksProps) {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="h-5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-3 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-gray-100 p-3 dark:border-gray-800"
+            >
+              <div className="h-3.5 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-4 w-14 rounded-full bg-gray-200 dark:bg-gray-700" />
+                <div className="h-3 w-12 rounded bg-gray-200 dark:bg-gray-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const doneId = statuses.find((s) => s.name === "Done")?.id || "";
 
   const getStatusColor = (statusId: string): string => {

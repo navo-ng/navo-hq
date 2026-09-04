@@ -6,9 +6,31 @@ import { Task, TaskStatusConfig } from "@/types/task";
 interface DueTodayProps {
   tasks: Task[];
   statuses: TaskStatusConfig[];
+  isLoading?: boolean;
 }
 
-export default function DueToday({ tasks, statuses }: DueTodayProps) {
+export default function DueToday({ tasks, statuses, isLoading = false }: DueTodayProps) {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex items-center gap-2">
+          <div className="h-5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800"
+            >
+              <div className="h-3.5 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="mt-2 h-3 w-20 rounded bg-gray-200 dark:bg-gray-700" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const doneId = statuses.find((s) => s.name === "Done")?.id || "";
   const today = new Date().toISOString().split("T")[0];
 

@@ -17,6 +17,7 @@ interface WorkloadViewProps {
   statuses: TaskStatusConfig[];
   onMemberClick?: (memberId: string) => void;
   thresholds?: { green: number; yellow: number };
+  isLoading?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -42,7 +43,36 @@ export function WorkloadView({
   statuses,
   onMemberClick,
   thresholds = { green: 3, yellow: 6 },
+  isLoading = false,
 }: WorkloadViewProps) {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="h-5 w-20 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="flex items-center gap-4">
+            <div className="h-3 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-3 w-20 rounded bg-gray-200 dark:bg-gray-700" />
+          </div>
+        </div>
+        <div className="space-y-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 rounded-lg p-3"
+            >
+              <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
+              <div className="h-3.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="hidden h-2 w-32 flex-shrink-0 sm:block">
+                <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700" />
+              </div>
+              <div className="h-5 w-6 rounded bg-gray-200 dark:bg-gray-700" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   const doneStatusId = useMemo(() => {
     const done = statuses.find((s) => s.name === "Done");
     return done?.id ?? null;

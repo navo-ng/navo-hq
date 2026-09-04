@@ -83,7 +83,7 @@ export function GanttChart({ tasks, startDate, endDate }: GanttChartProps) {
 
   const rowHeight = 40;
   const labelWidth = 200;
-  const dayWidth = Math.max(40, 800 / totalDays);
+  const dayWidth = Math.max(30, 800 / totalDays);
   const chartWidth = totalDays * dayWidth;
 
   const today = new Date();
@@ -110,7 +110,8 @@ export function GanttChart({ tasks, startDate, endDate }: GanttChartProps) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <div className="overflow-x-auto">
+      <div className="relative">
+        <div className="min-h-[300px] overflow-x-auto">
         <div style={{ minWidth: labelWidth + chartWidth + 16 }}>
           <div className="flex border-b border-gray-200 dark:border-gray-800">
             <div
@@ -222,6 +223,8 @@ export function GanttChart({ tasks, startDate, endDate }: GanttChartProps) {
             ))}
           </div>
         </div>
+      </div>
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent dark:from-gray-900 md:hidden" />
       </div>
     </div>
   );

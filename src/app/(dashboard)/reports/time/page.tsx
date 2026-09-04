@@ -21,7 +21,9 @@ import {
   Users,
   TrendingUp,
   Calendar,
+  Download,
 } from "lucide-react";
+import { downloadCSV } from "@/lib/utils/csv-export";
 
 interface TimeEntryRow {
   hours: number;
@@ -128,6 +130,18 @@ export default function TimeReportsPage() {
     const cutoff = weekAgo.toISOString().split("T")[0];
     return entries.filter((e) => e.date >= cutoff).reduce((s, e) => s + e.hours, 0);
   }, [entries]);
+
+  const handleExport = () => {
+    const headers = ["Task", "Member", "Hours", "Date"];
+    const rows = entries.map((e) => [
+      e.task?.title || "No Task",
+      e.user?.name || "Unknown",
+      String(Math.round(e.hours * 10) / 10),
+      e.date,
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    downloadCSV(csv, `time-report-${range}.csv`);
+  };
 
   const avgHoursPerDay = useMemo(() => {
     const uniqueDays = new Set(entries.map((e) => e.date)).size || 1;
@@ -256,6 +270,13 @@ export default function TimeReportsPage() {
             {r === "all" && "All Time"}
           </button>
         ))}
+        <button
+          onClick={handleExport}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+        >
+          <Download size={14} />
+          Export CSV
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

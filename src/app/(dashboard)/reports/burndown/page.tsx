@@ -13,7 +13,8 @@ import {
   Legend,
 } from "recharts";
 import ReportTabs from "@/components/reports/ReportTabs";
-import { Calendar, ListChecks, Target } from "lucide-react";
+import { Calendar, ListChecks, Target, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/utils/csv-export";
 
 interface ProjectOption {
   id: string;
@@ -176,6 +177,13 @@ export default function BurndownPage() {
     };
   }, [taskData, doneStatusId]);
 
+  const handleExport = () => {
+    const headers = ["Date", "Ideal Remaining", "Actual Remaining"];
+    const rows = burndownData.map((d) => [d.date, String(d.ideal), String(d.actual)]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    downloadCSV(csv, "burndown-report.csv");
+  };
+
   if (isProjectLoading) {
     return (
       <div className="space-y-6">
@@ -214,6 +222,17 @@ export default function BurndownPage() {
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <button
+          onClick={handleExport}
+          disabled={!selectedProjectId || isLoading || taskData.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+        >
+          <Download size={14} />
+          Export CSV
+        </button>
       </div>
 
       {!selectedProjectId ? (

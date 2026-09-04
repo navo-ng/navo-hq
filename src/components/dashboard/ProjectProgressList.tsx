@@ -6,9 +6,42 @@ import { Project } from "@/types/project";
 
 export default function ProjectProgressList({
   projects,
+  isLoading = false,
 }: {
   projects: Project[];
+  isLoading?: boolean;
 }) {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-3 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-gray-100 p-3 dark:border-gray-800"
+            >
+              <div className="flex items-center justify-between">
+                <div className="h-3.5 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-4 w-14 rounded-full bg-gray-200 dark:bg-gray-700" />
+              </div>
+              <div className="mt-3">
+                <div className="flex items-center justify-between">
+                  <div className="h-2.5 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+                  <div className="h-2.5 w-6 rounded bg-gray-200 dark:bg-gray-700" />
+                </div>
+                <div className="mt-1 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const activeProjects = projects
     .filter((p) => p.status?.name?.toLowerCase() === "active" || p.task_stats)
     .slice(0, 6);
