@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [teamSettings, setTeamSettings] = useState<TeamSetting[]>([]);
   const [userSettings, setUserSettings] = useState<UserSetting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [timezone, setTimezone] = useState("");
@@ -33,35 +34,40 @@ export default function SettingsPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData.user?.id;
 
-      const [teamData, userData2] = await Promise.all([
-        fetchTeamSettings(supabase),
-        userId ? fetchUserSettings(supabase, userId) : Promise.resolve([]),
-      ]);
+        const [teamData, userData2] = await Promise.all([
+          fetchTeamSettings(supabase),
+          userId ? fetchUserSettings(supabase, userId) : Promise.resolve([]),
+        ]);
 
-      if (!cancelled) {
-        setTeamSettings(teamData);
-        setUserSettings(userData2);
+        if (!cancelled) {
+          setTeamSettings(teamData);
+          setUserSettings(userData2);
 
-        const companySetting = teamData.find((s) => s.key === "company_name");
-        if (companySetting) setCompanyName(String(companySetting.value));
+          const companySetting = teamData.find((s) => s.key === "company_name");
+          if (companySetting) setCompanyName(String(companySetting.value));
 
-        const tzSetting = teamData.find((s) => s.key === "timezone");
-        if (tzSetting) setTimezone(String(tzSetting.value));
+          const tzSetting = teamData.find((s) => s.key === "timezone");
+          if (tzSetting) setTimezone(String(tzSetting.value));
 
-        const themeSetting = userData2.find((s) => s.key === "theme");
-        if (themeSetting) {
-          const t = String(themeSetting.value);
-          setTheme(t);
-          setGlobalTheme(t);
+          const themeSetting = userData2.find((s) => s.key === "theme");
+          if (themeSetting) {
+            const t = String(themeSetting.value);
+            setTheme(t);
+            setGlobalTheme(t);
+          }
+
+          const notifSetting = userData2.find((s) => s.key === "notifications_enabled");
+          if (notifSetting) setNotificationsEnabled(Boolean(notifSetting.value));
         }
-
-        const notifSetting = userData2.find((s) => s.key === "notifications_enabled");
-        if (notifSetting) setNotificationsEnabled(Boolean(notifSetting.value));
-
-        setIsLoading(false);
+      } catch (err) {
+        console.error("Failed to load settings:", err);
+        if (!cancelled) setLoadError("Failed to load settings");
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
     load();
@@ -124,6 +130,15 @@ export default function SettingsPage() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 dark:text-red-400">{loadError}</p>
+        <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );
   }
@@ -333,6 +348,9 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+              role="switch"
+              aria-checked={notificationsEnabled}
+              aria-label="Email notifications"
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
                 notificationsEnabled ? "bg-navo-blue" : "bg-gray-200 dark:bg-gray-700"
               }`}

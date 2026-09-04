@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, GripVertical, ToggleLeft, ToggleRight } from "lucide-react";
+import Link from "next/link";
+import { Plus, Trash2, GripVertical, ToggleLeft, ToggleRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
@@ -14,6 +15,7 @@ import {
   CustomStatus,
 } from "@/lib/data/custom-statuses";
 import { MESSAGES } from "@/lib/utils/messages";
+import { useToast } from "@/lib/hooks/useToast";
 
 const STATUS_COLORS = [
   "#EF4444",
@@ -36,7 +38,7 @@ export default function StatusesPage() {
   const [statusColor, setStatusColor] = useState(STATUS_COLORS[0]);
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const supabase = createClient();
 
@@ -54,11 +56,6 @@ export default function StatusesPage() {
       cancelled = true;
     };
   }, [supabase]);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const resetForm = () => {
     setStatusName("");
@@ -79,7 +76,7 @@ export default function StatusesPage() {
 
     if (created) {
       setStatuses((prev) => [...prev, created]);
-      showToast(MESSAGES.STATUS_CREATED);
+      showToast({ title: MESSAGES.STATUS_CREATED, type: "success" });
     }
 
     resetForm();
@@ -95,9 +92,9 @@ export default function StatusesPage() {
     const success = await deleteStatus(supabase, deletingId);
     if (success) {
       setStatuses((prev) => prev.filter((s) => s.id !== deletingId));
-      showToast(MESSAGES.STATUS_DELETED);
+      showToast({ title: MESSAGES.STATUS_DELETED, type: "success" });
     } else {
-      showToast("Cannot delete status — it may be in use by tasks");
+      showToast({ title: "Cannot delete status — it may be in use by tasks", type: "error" });
     }
     setDeletingId(null);
   };
@@ -145,12 +142,13 @@ export default function StatusesPage() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className="fixed right-4 top-4 z-50 rounded-lg bg-green-600 px-4 py-2 text-sm text-white shadow-lg">
-          {toast}
-        </div>
-      )}
-
+      <Link
+        href="/settings"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
+      >
+        <ArrowLeft size={14} />
+        Back to Settings
+      </Link>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

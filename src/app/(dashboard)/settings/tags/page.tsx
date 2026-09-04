@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import Link from "next/link";
+import { Plus, Pencil, Trash2, Search, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
@@ -138,6 +139,13 @@ export default function TagsPage() {
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/settings"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
+      >
+        <ArrowLeft size={14} />
+        Back to Settings
+      </Link>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

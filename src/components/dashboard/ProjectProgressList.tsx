@@ -27,9 +27,17 @@ export default function ProjectProgressList({
         </Link>
       </div>
       {activeProjects.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          No active projects.
-        </p>
+        <div className="text-center py-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            No active projects
+          </p>
+          <Link
+            href="/projects"
+            className="mt-2 inline-block text-xs font-medium text-navo-blue hover:underline"
+          >
+            View projects →
+          </Link>
+        </div>
       ) : (
         <div className="space-y-4">
           {activeProjects.map((project) => {

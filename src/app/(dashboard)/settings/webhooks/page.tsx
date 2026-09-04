@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Plus,
   Trash2,
@@ -8,6 +9,7 @@ import {
   Webhook,
   ExternalLink,
   RefreshCw,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +25,7 @@ import {
   WEBHOOK_EVENTS,
 } from "@/lib/data/webhooks";
 import { MESSAGES } from "@/lib/utils/messages";
+import { useToast } from "@/lib/hooks/useToast";
 
 export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
@@ -35,7 +38,7 @@ export default function WebhooksPage() {
   const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const supabase = createClient();
 
@@ -99,7 +102,7 @@ export default function WebhooksPage() {
 
     if (created) {
       setWebhooks((prev) => [created, ...prev]);
-      showToast(MESSAGES.WEBHOOK_CREATED);
+      showToast({ title: MESSAGES.WEBHOOK_CREATED, type: "success" });
     }
 
     resetForm();
@@ -114,7 +117,7 @@ export default function WebhooksPage() {
     if (!deletingId) return;
     await deleteWebhook(supabase, deletingId);
     setWebhooks((prev) => prev.filter((w) => w.id !== deletingId));
-    showToast(MESSAGES.WEBHOOK_DELETED);
+    showToast({ title: MESSAGES.WEBHOOK_DELETED, type: "success" });
     setDeletingId(null);
   };
 
@@ -128,23 +131,20 @@ export default function WebhooksPage() {
   const handleTest = async (webhook: WebhookType) => {
     setTestingId(webhook.id);
     const success = await sendTestWebhook(supabase, webhook);
-    showToast(success ? MESSAGES.WEBHOOK_TEST_SENT : "Test webhook failed");
+    showToast({ title: success ? MESSAGES.WEBHOOK_TEST_SENT : "Test webhook failed", type: success ? "success" : "error" });
     setTestingId(null);
-  };
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
   };
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className="fixed right-4 top-4 z-50 rounded-lg bg-green-600 px-4 py-2 text-sm text-white shadow-lg">
-          {toast}
-        </div>
-      )}
 
+      <Link
+        href="/settings"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
+      >
+        <ArrowLeft size={14} />
+        Back to Settings
+      </Link>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

@@ -50,6 +50,8 @@ export function Dialog({
         onClick={onClose}
       />
       <div
+        role="dialog"
+        aria-modal="true"
         className={`relative z-10 w-full max-w-full sm:${maxWidths[maxWidth]} mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900`}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -58,6 +60,7 @@ export function Dialog({
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <X size={18} />

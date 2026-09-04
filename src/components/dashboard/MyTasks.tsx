@@ -42,7 +42,7 @@ export default function MyTasks({ tasks, statuses, userId }: MyTasksProps) {
       </div>
       {myTasks.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          No tasks assigned to you.
+          No tasks assigned to you yet.
         </p>
       ) : (
         <div className="space-y-3">

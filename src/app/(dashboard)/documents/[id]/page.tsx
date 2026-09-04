@@ -53,6 +53,7 @@ export default function DocumentDetailPage() {
   const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -89,6 +90,7 @@ export default function DocumentDetailPage() {
         }
       } catch (err) {
         console.error("Failed to load document:", err);
+        setLoadError("Failed to load document. Please try again.");
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -110,6 +112,15 @@ export default function DocumentDetailPage() {
         <div className="h-8 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
         <div className="h-10 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
         <div className="h-64 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-800" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 dark:text-red-400">{loadError}</p>
+        <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );
   }

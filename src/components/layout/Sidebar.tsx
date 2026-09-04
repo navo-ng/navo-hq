@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, createContext, useContext } from "react";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { createClient } from "@/lib/supabase/client";
 
 interface NavItem {
   href: string;
@@ -71,13 +72,13 @@ function NavLinks({
       {navItems
         .filter((item) => !item.roles || (role && item.roles.includes(role)))
         .map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-navo-blue focus-visible:outline-offset-2 ${
                 isActive
                   ? "bg-navo-blue/10 text-navo-blue"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
@@ -117,7 +118,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { mobileOpen, setMobileOpen } = useSidebar();
-  const { role } = useCurrentUser();
+  const { role, userId, fullName } = useCurrentUser();
+  const supabase = createClient();
   const { theme, setTheme } = useTheme();
 
   const cycleTheme = () => {
@@ -127,6 +129,14 @@ export function Sidebar() {
   };
 
   const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileOpen) setMobileOpen(false);
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [mobileOpen, setMobileOpen]);
 
   const visibleItems = navItems.filter(
     (item) => !item.roles || (role && item.roles.includes(role))
@@ -162,12 +172,12 @@ export function Sidebar() {
 
         <nav className="flex-1 space-y-1 p-2">
           {visibleItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-navo-blue focus-visible:outline-offset-2 ${
                   isActive
                     ? "bg-navo-blue/10 text-navo-blue"
                     : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
@@ -190,6 +200,20 @@ export function Sidebar() {
             <ThemeIcon size={18} />
             {!collapsed && <span className="capitalize">{theme}</span>}
           </button>
+        </div>
+
+        <div className="border-t border-gray-200 p-2 dark:border-gray-800">
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-navo-blue text-xs font-medium text-white shrink-0">
+              {fullName?.charAt(0).toUpperCase() || "?"}
+            </div>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{fullName || "User"}</p>
+                <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }} className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400">Sign out</button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
@@ -230,6 +254,18 @@ export function Sidebar() {
                 <ThemeIcon size={18} />
                 <span className="capitalize">{theme}</span>
               </button>
+            </div>
+
+            <div className="border-t border-gray-200 p-2 dark:border-gray-800">
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-navo-blue text-xs font-medium text-white shrink-0">
+                  {fullName?.charAt(0).toUpperCase() || "?"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{fullName || "User"}</p>
+                  <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }} className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400">Sign out</button>
+                </div>
+              </div>
             </div>
           </aside>
         </div>

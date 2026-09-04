@@ -41,6 +41,7 @@ export default function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [userId, setUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -65,10 +66,17 @@ export default function CalendarPage() {
     let cancelled = false;
     async function load() {
       setIsLoading(true);
-      const data = await fetchEventsForMonth(supabase, year, month);
-      if (!cancelled) {
-        setEvents(data);
-        setIsLoading(false);
+      try {
+        const data = await fetchEventsForMonth(supabase, year, month);
+        if (!cancelled) {
+          setEvents(data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Failed to load events:", err);
+        if (!cancelled) setError("Failed to load events. Please try again.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
     load();
@@ -246,7 +254,12 @@ export default function CalendarPage() {
             </button>
           </div>
 
-          {viewMode === "grid" ? (
+          {error ? (
+            <div className="text-center py-12">
+              <p className="text-red-500 dark:text-red-400">{error}</p>
+              <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
+            </div>
+          ) : viewMode === "grid" ? (
             <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">
               {WEEKDAYS.map((day) => (
                 <div

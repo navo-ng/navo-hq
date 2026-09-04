@@ -78,6 +78,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
   const [taskPriorities, setTaskPriorities] = useState<TaskPriorityConfig[]>([]);
   const [tags, setTags] = useState<TaskTag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -123,6 +124,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
         }
       } catch (err) {
         console.error("Failed to load project:", err);
+        setLoadError("Failed to load project. Please try again.");
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -204,6 +206,15 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 dark:text-red-400">{loadError}</p>
+        <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );
   }

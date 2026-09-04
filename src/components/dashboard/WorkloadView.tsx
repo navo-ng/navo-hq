@@ -113,10 +113,15 @@ export function WorkloadView({
             const pct = Math.round((member.count / maxCount) * 100);
 
             return (
-              <button
+              <div
                 key={member.id}
-                onClick={() => onMemberClick?.(member.id)}
-                className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                onClick={onMemberClick ? () => onMemberClick(member.id) : undefined}
+                role={onMemberClick ? "button" : undefined}
+                tabIndex={onMemberClick ? 0 : undefined}
+                onKeyDown={onMemberClick ? (e) => { if (e.key === "Enter" || e.key === " ") onMemberClick(member.id); } : undefined}
+                className={`flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors ${
+                  onMemberClick ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50" : ""
+                }`}
               >
                 {member.avatar_url ? (
                   <img
@@ -144,7 +149,7 @@ export function WorkloadView({
                 </div>
 
                 <Badge color={bar}>{member.count}</Badge>
-              </button>
+              </div>
             );
           })}
 

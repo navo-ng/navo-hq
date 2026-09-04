@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Filter } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, ChevronRight, Filter, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
@@ -88,6 +89,13 @@ export default function AuditLogPage() {
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/settings"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
+      >
+        <ArrowLeft size={14} />
+        Back to Settings
+      </Link>
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Audit Log
