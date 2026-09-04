@@ -17,6 +17,7 @@ import {
   ChevronRight,
   X,
   ClipboardList,
+  BarChart3,
 } from "lucide-react";
 import { useState, useEffect, createContext, useContext } from "react";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/reports/time", label: "Reports", icon: BarChart3 },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
 ];

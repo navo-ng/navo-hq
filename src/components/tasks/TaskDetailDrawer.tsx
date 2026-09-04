@@ -6,15 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Task, TaskUser, TaskProject, TaskTag, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { ActivityWithUser } from "@/types/activity";
-import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2, Pencil, Clock, Paperclip } from "lucide-react";
+import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2, Pencil, Clock, Paperclip, ListChecks, Link2, Moon } from "lucide-react";
 import { CommentThread } from "@/components/comments/CommentThread";
 import { TaskDependencySection } from "./TaskDependencySection";
 import { TimeTracker } from "./TimeTracker";
 import { AttachmentSection } from "./AttachmentSection";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { EditTaskDialog } from "./EditTaskDialog";
+import { ChecklistSection } from "./ChecklistSection";
+import { TaskLinksSection } from "./TaskLinksSection";
 import { createClient } from "@/lib/supabase/client";
-import { updateTaskOwner, fetchUsers, fetchProjects, fetchTags, fetchTaskStatuses, fetchTaskPriorities } from "@/lib/data/tasks";
+import { updateTaskOwner, fetchUsers, fetchProjects, fetchTags, fetchTaskStatuses, fetchTaskPriorities, updateTask } from "@/lib/data/tasks";
 import { logActivity } from "@/lib/data/log-activity";
 import { createNotification } from "@/lib/data/create-notification";
 import { fetchActivities } from "@/lib/data/activities";
@@ -68,7 +70,9 @@ export function TaskDetailDrawer({
   const { showToast } = useToast();
   const supabase = createClient();
   const [ownerOverride, setOwnerOverride] = useState<string | null>(null);
-  const localTask = task ? { ...task, owner_id: ownerOverride ?? task.owner_id } : null;
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
+  const [snoozedUntil, setSnoozedUntil] = useState<string | null>(task?.snoozed_until ?? null);
+  const localTask = task ? { ...task, owner_id: ownerOverride ?? task.owner_id, snoozed_until: snoozedUntil } : null;
 
   useEffect(() => {
     if (!task || !open) return;
@@ -99,6 +103,13 @@ export function TaskDetailDrawer({
       setAllPriorities(pr);
     });
   }, [open, supabase]);
+
+  useEffect(() => {
+    if (task) {
+      setOwnerOverride(task.owner_id);
+      setSnoozedUntil(task.snoozed_until ?? null);
+    }
+  }, [task]);
 
   if (!localTask) return null;
 
@@ -163,6 +174,27 @@ export function TaskDetailDrawer({
     }
   };
 
+  const handleSnooze = async (days: number | null) => {
+    const date = days === null
+      ? null
+      : new Date(Date.now() + days * 86400000).toISOString().split("T")[0];
+    await updateTask(supabase, localTask.id, { snoozed_until: date });
+    setSnoozedUntil(date);
+    setSnoozeOpen(false);
+    if (date) {
+      showToast({ title: MESSAGES.TASK_SNOOZED.replace("{date}", formatDate(date)), type: "success" });
+    } else {
+      showToast({ title: MESSAGES.TASK_UNSNOOZED, type: "success" });
+    }
+  };
+
+  const handleSnoozeCustom = async (dateStr: string) => {
+    await updateTask(supabase, localTask.id, { snoozed_until: dateStr });
+    setSnoozedUntil(dateStr);
+    setSnoozeOpen(false);
+    showToast({ title: MESSAGES.TASK_SNOOZED.replace("{date}", formatDate(dateStr)), type: "success" });
+  };
+
   return (
     <Drawer open={open} onClose={onClose} title="Task Details">
       <div className="space-y-6">
@@ -207,6 +239,69 @@ export function TaskDetailDrawer({
             </p>
           </div>
         )}
+
+        {snoozedUntil && (
+          <div className="flex items-center justify-between rounded-lg bg-yellow-50 px-3 py-2 dark:bg-yellow-900/20">
+            <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300">
+              <Moon size={14} />
+              Snoozed until {formatDate(snoozedUntil)}
+            </div>
+            <button
+              onClick={() => handleSnooze(null)}
+              className="text-xs font-medium text-yellow-600 hover:text-yellow-800 dark:text-yellow-400"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSnoozeOpen(!snoozeOpen)}
+            className="text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <Moon size={14} className="mr-1" />
+            {snoozedUntil ? "Reschedule" : "Snooze"}
+          </Button>
+          {snoozeOpen && (
+            <div className="absolute left-0 z-10 mt-1 w-56 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+              <button
+                onClick={() => handleSnooze(1)}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Tomorrow
+              </button>
+              <button
+                onClick={() => handleSnooze(7)}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Next week
+              </button>
+              <div className="border-t border-gray-100 dark:border-gray-800">
+                <div className="px-3 py-2">
+                  <label className="mb-1 block text-xs text-gray-500">Custom date</label>
+                  <input
+                    type="date"
+                    onChange={(e) => e.target.value && handleSnoozeCustom(e.target.value)}
+                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
+              </div>
+              {snoozedUntil && (
+                <div className="border-t border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={() => handleSnooze(null)}
+                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                  >
+                    Clear snooze
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-3">
@@ -305,6 +400,22 @@ export function TaskDetailDrawer({
             </div>
           </div>
         )}
+
+        <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <ListChecks size={14} />
+            Checklists
+          </div>
+          <ChecklistSection taskId={localTask.id} />
+        </div>
+
+        <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <Link2 size={14} />
+            Related Tasks
+          </div>
+          <TaskLinksSection taskId={localTask.id} />
+        </div>
 
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">

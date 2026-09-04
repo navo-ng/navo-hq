@@ -15,6 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "NAVO HQ",
   description: "One team. One source of truth.",
+  manifest: "/manifest.json",
+  themeColor: "#0064F0",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "NAVO HQ",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

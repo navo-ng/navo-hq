@@ -175,6 +175,9 @@ export default function WebhooksPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             No webhooks configured yet. Add one to get started.
           </p>
+          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+            For Slack: Use your Slack incoming webhook URL. Events will be formatted as Slack messages.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -45,6 +45,7 @@ function mapTask(row: Record<string, unknown>): Task {
     effort_score: (row.effort_score as number) ?? 3,
     recurrence: (row.recurrence as string) ?? "none",
     recurrence_end_date: (row.recurrence_end_date as string) ?? null,
+    snoozed_until: row.snoozed_until as string | null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     owner: owner
@@ -144,6 +145,9 @@ export async function fetchTasks(
     query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
   }
 
+  const today = new Date().toISOString().split("T")[0];
+  query = query.or(`snoozed_until.is.null,snoozed_until.lte.${today}`);
+
   const { data, error } = await query;
 
   if (error) {
@@ -235,6 +239,7 @@ export async function createTask(
       effort_score: input.effort_score || 3,
       recurrence: input.recurrence || "none",
       recurrence_end_date: input.recurrence_end_date || null,
+      snoozed_until: null,
     })
     .select(TASK_SELECT)
     .single();
@@ -423,6 +428,7 @@ export async function updateTask(
     recurrence_end_date?: string | null;
     impact_score?: number;
     effort_score?: number;
+    snoozed_until?: string | null;
   }
 ): Promise<Task | null> {
   const { tag_ids, ...taskData } = input;
@@ -443,6 +449,9 @@ export async function updateTask(
   }
   if ("recurrence_end_date" in taskData && taskData.recurrence_end_date === null) {
     updatePayload.recurrence_end_date = null;
+  }
+  if ("snoozed_until" in taskData) {
+    updatePayload.snoozed_until = taskData.snoozed_until === null ? null : taskData.snoozed_until;
   }
 
   if (taskData.status_id) {

@@ -10,6 +10,7 @@ import { Decision, DecisionVote, DecisionUser } from "@/types/decision";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDecisionById, fetchDecisionVotes, fetchAllUsers } from "@/lib/data/decisions";
 import { printDecisionReport } from "@/lib/utils/pdf-export";
+import { CommentThread } from "@/components/comments/CommentThread";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-NG", {
@@ -170,7 +171,13 @@ export default function DecisionDetailPage() {
                       {c.contribution}
                     </p>
                   )}
-                </div>
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+          Comments
+        </h3>
+        <CommentThread entityType="decision" entityId={decisionId} />
+      </div>
+    </div>
               </div>
             ))}
           </div>
@@ -220,6 +227,13 @@ export default function DecisionDetailPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+          Comments
+        </h3>
+        <CommentThread entityType="decision" entityId={decisionId} />
       </div>
     </div>
   );

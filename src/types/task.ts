@@ -49,6 +49,7 @@ export interface Task {
   effort_score?: number;
   recurrence: string | null;
   recurrence_end_date: string | null;
+  snoozed_until?: string | null;
   created_at: string;
   updated_at: string;
   owner?: TaskUser | null;

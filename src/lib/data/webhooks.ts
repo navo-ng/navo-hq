@@ -104,14 +104,34 @@ export async function fireWebhooks(
 
   for (const hook of hooks || []) {
     try {
-      const body = JSON.stringify({
-        event,
-        payload,
-        timestamp: new Date().toISOString(),
-      });
+      const isSlack = hook.url.includes("hooks.slack.com");
+      let body: string;
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
+
+      if (isSlack) {
+        const slackPayload = {
+          text: `${event}: ${JSON.stringify(payload.title || payload.entity_name || "")}`,
+          attachments: [{
+            color: "#0064F0",
+            title: event,
+            fields: Object.entries(payload).map(([k, v]) => ({
+              title: k,
+              value: String(v),
+              short: true,
+            })),
+          }],
+        };
+        body = JSON.stringify(slackPayload);
+      } else {
+        body = JSON.stringify({
+          event,
+          payload,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       if (hook.secret) {
         const signature = crypto
           .createHmac("sha256", hook.secret)
@@ -131,14 +151,30 @@ export async function sendTestWebhook(
   webhook: Webhook
 ): Promise<boolean> {
   try {
-    const body = JSON.stringify({
-      event: "test.ping",
-      payload: { message: "This is a test webhook from NAVO HQ" },
-      timestamp: new Date().toISOString(),
-    });
+    const isSlack = webhook.url.includes("hooks.slack.com");
+    let body: string;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
+
+    if (isSlack) {
+      const slackPayload = {
+        text: "test.ping: This is a test webhook from NAVO HQ",
+        attachments: [{
+          color: "#0064F0",
+          title: "test.ping",
+          text: "This is a test webhook from NAVO HQ",
+        }],
+      };
+      body = JSON.stringify(slackPayload);
+    } else {
+      body = JSON.stringify({
+        event: "test.ping",
+        payload: { message: "This is a test webhook from NAVO HQ" },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     if (webhook.secret) {
       const signature = crypto
         .createHmac("sha256", webhook.secret)

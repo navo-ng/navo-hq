@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList, FileText, Webhook, Shield } from "lucide-react";
+import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList, FileText, Webhook, Shield, CircleDot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TeamSetting, UserSetting } from "@/types/settings";
@@ -212,6 +212,22 @@ export default function SettingsPage() {
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Track all changes in your workspace
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/statuses"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-900/20">
+            <CircleDot size={20} className="text-teal-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Task Statuses
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Create and manage custom task statuses
             </p>
           </div>
         </Link>
