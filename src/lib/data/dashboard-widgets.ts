@@ -19,6 +19,7 @@ export const WIDGET_TYPES = [
   { type: "recent_activity", label: "Recent Activity", description: "Latest team activity" },
   { type: "overdue", label: "Overdue Tasks", description: "Tasks past due date" },
   { type: "due_today", label: "Due Today", description: "Tasks due today" },
+  { type: "capacity", label: "Team Capacity", description: "Hours used vs capacity" },
 ] as const;
 
 export async function fetchWidgets(

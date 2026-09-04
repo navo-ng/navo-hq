@@ -177,17 +177,22 @@ export default function DashboardPage() {
           />
 
           <DashboardWidgetRenderer
-            widget={makeWidget("recent_activity", 6)}
+            widget={makeWidget("capacity", 6)}
+            {...widgetProps}
+          />
+
+          <DashboardWidgetRenderer
+            widget={makeWidget("recent_activity", 7)}
             {...widgetProps}
           />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <DashboardWidgetRenderer
-              widget={makeWidget("overdue", 7)}
+              widget={makeWidget("overdue", 8)}
               {...widgetProps}
             />
             <DashboardWidgetRenderer
-              widget={makeWidget("due_today", 8)}
+              widget={makeWidget("due_today", 9)}
               {...widgetProps}
             />
           </div>

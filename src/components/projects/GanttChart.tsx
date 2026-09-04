@@ -16,6 +16,7 @@ interface GanttChartProps {
   tasks: GanttTask[];
   startDate?: Date;
   endDate?: Date;
+  dependencies?: { blocked_by_id: string; task_id: string }[];
 }
 
 function parseDate(d: string): Date {
@@ -31,8 +32,8 @@ function formatDateLabel(d: Date): string {
   return d.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
 }
 
-export function GanttChart({ tasks, startDate, endDate }: GanttChartProps) {
-  const { rangedTasks, noDateTasks, chartStart, chartEnd, totalDays } =
+export function GanttChart({ tasks, startDate, endDate, dependencies }: GanttChartProps) {
+  const { rangedTasks, noDateTasks, chartStart, chartEnd, totalDays, taskOrder } =
     useMemo(() => {
       const withDates = tasks.filter((t) => t.start_date || t.due_date);
       const noDate = tasks.filter((t) => !t.start_date && !t.due_date);
@@ -44,6 +45,7 @@ export function GanttChart({ tasks, startDate, endDate }: GanttChartProps) {
           chartStart: new Date(),
           chartEnd: new Date(),
           totalDays: 0,
+          taskOrder: new Map<string, number>(),
         };
       }
 
@@ -64,12 +66,18 @@ export function GanttChart({ tasks, startDate, endDate }: GanttChartProps) {
 
       const total = Math.max(daysBetween(padStart, padEnd), 7);
 
+      // Build a map of task id -> row index in the rendered order
+      const order = new Map<string, number>();
+      withDates.forEach((t, i) => order.set(t.id, i));
+      noDate.forEach((t, i) => order.set(t.id, withDates.length + i));
+
       return {
         rangedTasks: withDates,
         noDateTasks: noDate,
         chartStart: padStart,
         chartEnd: padEnd,
         totalDays: total,
+        taskOrder: order,
       };
     }, [tasks, startDate, endDate]);
 
@@ -111,8 +119,92 @@ export function GanttChart({ tasks, startDate, endDate }: GanttChartProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
       <div className="relative">
-        <div className="min-h-[300px] overflow-x-auto">
+        <div className="relative min-h-[300px] overflow-x-auto">
         <div style={{ minWidth: labelWidth + chartWidth + 16 }}>
+          {/* Dependency arrows SVG overlay */}
+          {dependencies && dependencies.length > 0 && (
+            <svg
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                width: "100%",
+                height: `${(rangedTasks.length + noDateTasks.length) * rowHeight + 40}px`,
+                zIndex: 25,
+              }}
+            >
+              <defs>
+                <marker
+                  id="arrowhead"
+                  markerWidth="10"
+                  markerHeight="7"
+                  refX="10"
+                  refY="3.5"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" opacity="0.7" />
+                </marker>
+              </defs>
+              {dependencies.map((dep, i) => {
+                const blockerRow = taskOrder.get(dep.blocked_by_id);
+                const blockedRow = taskOrder.get(dep.task_id);
+                if (blockerRow === undefined || blockedRow === undefined) return null;
+
+                const blockerTask = rangedTasks.find((t) => t.id === dep.blocked_by_id);
+                const blockedTask = rangedTasks.find((t) => t.id === dep.task_id);
+
+                // Y: center of each row (header is 40px tall, rows start after)
+                const headerHeight = 40;
+                const fromY = headerHeight + blockerRow * rowHeight + rowHeight / 2;
+                const toY = headerHeight + blockedRow * rowHeight + rowHeight / 2;
+
+                // X: end of blocker bar -> start of blocked bar
+                let fromX: number;
+                let toX: number;
+
+                if (blockerTask) {
+                  const bStart = blockerTask.start_date
+                    ? parseDate(blockerTask.start_date)
+                    : parseDate(blockerTask.due_date!);
+                  const bEnd = blockerTask.due_date
+                    ? parseDate(blockerTask.due_date)
+                    : parseDate(blockerTask.start_date!);
+                  const bStartOff = Math.max(0, daysBetween(chartStart, bStart));
+                  const bEndOff = daysBetween(chartStart, bEnd);
+                  const bBarDays = Math.max(1, bEndOff - bStartOff + 1);
+                  fromX = labelWidth + bStartOff * dayWidth + bBarDays * dayWidth - 2;
+                } else {
+                  fromX = labelWidth + chartWidth / 2;
+                }
+
+                if (blockedTask) {
+                  const tStart = blockedTask.start_date
+                    ? parseDate(blockedTask.start_date)
+                    : parseDate(blockedTask.due_date!);
+                  const tStartOff = Math.max(0, daysBetween(chartStart, tStart));
+                  toX = labelWidth + tStartOff * dayWidth + 2;
+                } else {
+                  toX = labelWidth + 20;
+                }
+
+                // If fromX > toX (dependency goes left), offset the curve
+                const dx = toX - fromX;
+                const controlOffset = Math.max(40, Math.abs(dx) * 0.3);
+
+                return (
+                  <path
+                    key={i}
+                    d={`M ${fromX} ${fromY} C ${fromX + controlOffset} ${fromY}, ${toX - controlOffset} ${toY}, ${toX} ${toY}`}
+                    fill="none"
+                    stroke="#ef4444"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 2"
+                    markerEnd="url(#arrowhead)"
+                    opacity="0.6"
+                  />
+                );
+              })}
+            </svg>
+          )}
+
           <div className="flex border-b border-gray-200 dark:border-gray-800">
             <div
               className="sticky left-0 z-10 flex shrink-0 items-center border-r border-gray-200 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400"

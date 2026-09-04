@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target, CheckSquare, Upload } from "lucide-react";
+import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target, CheckSquare, Upload, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
@@ -14,6 +14,7 @@ import { TaskBreakdownDialog } from "@/components/tasks/TaskBreakdownDialog";
 import { ScoreMatrixDialog } from "@/components/tasks/ScoreMatrixDialog";
 import { BulkEditDialog } from "@/components/tasks/BulkEditDialog";
 import { ImportTasksDialog } from "@/components/tasks/ImportTasksDialog";
+import { TaskSetTemplateDialog } from "@/components/tasks/TaskSetTemplateDialog";
 import { MeetingNotesParser } from "@/components/meetings/MeetingNotesParser";
 import { Task, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
@@ -69,6 +70,7 @@ export default function TasksPage() {
   const [scoreMatrixOpen, setScoreMatrixOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const { showToast } = useToast();
 
   const supabase = createClient();
@@ -483,6 +485,10 @@ export default function TasksPage() {
             <Target size={16} />
             Score Matrix
           </Button>
+          <Button variant="secondary" onClick={() => setTemplateDialogOpen(true)}>
+            <Copy size={16} />
+            Templates
+          </Button>
           <Button onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}>
             <Plus size={16} />
             New Task
@@ -706,6 +712,12 @@ export default function TasksPage() {
           setSelectedIds(new Set());
           refetchTasks();
         }}
+      />
+
+      <TaskSetTemplateDialog
+        open={templateDialogOpen}
+        onClose={() => setTemplateDialogOpen(false)}
+        onCreated={refetchTasks}
       />
 
       {selectedIds.size > 0 && (

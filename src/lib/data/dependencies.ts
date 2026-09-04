@@ -157,6 +157,50 @@ export async function addDependency(
   }
 }
 
+export async function fetchProjectDependencies(
+  supabase: SupabaseClient,
+  projectId: string
+): Promise<{ task_id: string; blocked_by_id: string }[]> {
+  const { data, error } = await supabase
+    .from("task_dependencies")
+    .select("task_id, blocked_by_id, task:tasks!task_dependencies_task_id_fkey(project_id)")
+    .eq("task:tasks!task_dependencies_task_id_fkey.project_id", projectId);
+
+  if (error) {
+    // Fallback: fetch all dependencies and filter client-side
+    const { data: allDeps, error: allError } = await supabase
+      .from("task_dependencies")
+      .select("task_id, blocked_by_id");
+
+    if (allError) {
+      console.error("Error fetching project dependencies:", allError);
+      return [];
+    }
+
+    const taskIds = new Set<string>();
+    const { data: projectTasks } = await supabase
+      .from("tasks")
+      .select("id")
+      .eq("project_id", projectId);
+
+    if (projectTasks) {
+      for (const t of projectTasks) taskIds.add(t.id as string);
+    }
+
+    return (allDeps || [])
+      .filter((dep) => taskIds.has(dep.task_id) && taskIds.has(dep.blocked_by_id))
+      .map((dep) => ({
+        task_id: dep.task_id as string,
+        blocked_by_id: dep.blocked_by_id as string,
+      }));
+  }
+
+  return (data || []).map((row: any) => ({
+    task_id: row.task_id as string,
+    blocked_by_id: row.blocked_by_id as string,
+  }));
+}
+
 export async function removeDependency(
   supabase: SupabaseClient,
   taskId: string,

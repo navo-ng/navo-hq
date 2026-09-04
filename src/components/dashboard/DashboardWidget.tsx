@@ -10,6 +10,7 @@ import ProjectProgressList from "@/components/dashboard/ProjectProgressList";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
 import { WorkloadView } from "@/components/dashboard/WorkloadView";
+import { CapacityView } from "@/components/dashboard/CapacityView";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
 import OverdueTasks from "@/components/dashboard/OverdueTasks";
 import DueToday from "@/components/dashboard/DueToday";
@@ -61,6 +62,8 @@ export function DashboardWidgetRenderer({
       return <OverdueTasks tasks={tasks} statuses={statuses} />;
     case "due_today":
       return <DueToday tasks={tasks} statuses={statuses} />;
+    case "capacity":
+      return <CapacityView />;
     default:
       return null;
   }

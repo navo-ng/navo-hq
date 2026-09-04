@@ -45,6 +45,7 @@ import {
   fetchProjectTasks,
 } from "@/lib/data/projects";
 import { fetchTaskStatuses, fetchTaskPriorities, createTask } from "@/lib/data/tasks";
+import { fetchProjectDependencies } from "@/lib/data/dependencies";
 import { printProjectReport } from "@/lib/utils/pdf-export";
 import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
 import { getUserProjectRole, ProjectRole } from "@/lib/data/project-permissions";
@@ -87,6 +88,9 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
   const [taskViewMode, setTaskViewMode] = useState<"table" | "gantt">("table");
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<ProjectRole | null>(null);
+  const [taskDependencies, setTaskDependencies] = useState<
+    { task_id: string; blocked_by_id: string }[]
+  >([]);
 
   const supabase = createClient();
 
@@ -114,6 +118,9 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
           if (projectData) {
             const tasks = await fetchProjectTasks(supabase, projectId);
             if (!cancelled) setProjectTasks(tasks);
+
+            const deps = await fetchProjectDependencies(supabase, projectId);
+            if (!cancelled) setTaskDependencies(deps);
 
             const { data: userData } = await supabase.auth.getUser();
             if (userData.user) {
@@ -563,6 +570,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
                 status_color: t.status?.color || "#9CA3AF",
                 owner: t.owner?.name,
               }))}
+              dependencies={taskDependencies}
             />
           )}
         </div>
