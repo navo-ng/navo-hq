@@ -80,6 +80,7 @@ export function TaskDependencySection({
   };
 
   const handleRemoveBlockedBy = async (blockedById: string) => {
+    if (!confirm("Remove this dependency?")) return;
     setBlockedBy((d) => d.filter((t) => t.id !== blockedById));
     await removeDependency(supabase, taskId, blockedById);
     refresh();
@@ -97,6 +98,7 @@ export function TaskDependencySection({
   };
 
   const handleRemoveBlocks = async (blockedTaskId: string) => {
+    if (!confirm("Remove this dependency?")) return;
     setBlocks((d) => d.filter((t) => t.id !== blockedTaskId));
     await removeDependency(supabase, blockedTaskId, taskId);
     refresh();

@@ -101,6 +101,7 @@ export function CreateTaskFromTemplate({
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm("Delete this template?")) return;
     await deleteTaskTemplate(supabase, templateId);
     setTemplates((prev) => prev.filter((t) => t.id !== templateId));
   };

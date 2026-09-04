@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, User } from "lucide-react";
+import { AlertTriangle, CheckCircle, User } from "lucide-react";
 import { Task, TaskStatusConfig } from "@/types/task";
 
 interface OverdueTasksProps {
@@ -19,7 +19,16 @@ export default function OverdueTasks({ tasks, statuses }: OverdueTasksProps) {
     )
     .slice(0, 5);
 
-  if (overdue.length === 0) return null;
+  if (overdue.length === 0) {
+    return (
+      <div className="rounded-xl border border-green-200 bg-green-50/50 p-6 dark:border-green-900 dark:bg-green-900/10">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-green-700 dark:text-green-400">
+          <CheckCircle size={18} />
+          No overdue tasks
+        </h2>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-red-200 bg-red-50/50 p-6 dark:border-red-900 dark:bg-red-900/10">

@@ -11,6 +11,7 @@ interface VotePanelProps {
   decisionId: string;
   votes: DecisionVote[];
   currentUserId: string;
+  totalMembers?: number;
   onVoteChange: () => void;
 }
 
@@ -20,7 +21,7 @@ const VOTE_OPTIONS = [
   { value: "abstain" as const, label: "Abstain", icon: Minus, color: "bg-gray-400", activeColor: "bg-gray-100 border-gray-400 text-gray-700 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-300" },
 ] as const;
 
-export function VotePanel({ decisionId, votes, currentUserId, onVoteChange }: VotePanelProps) {
+export function VotePanel({ decisionId, votes, currentUserId, totalMembers, onVoteChange }: VotePanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const supabase = createClient();
   const summary: DecisionVoteSummary = computeVoteSummary(votes, currentUserId);
@@ -51,7 +52,7 @@ export function VotePanel({ decisionId, votes, currentUserId, onVoteChange }: Vo
         </h3>
         {total > 0 && (
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            {votes.length} of {votes.length + (summary.total === 0 ? 0 : 0)} team members voted
+            {votes.length} of {totalMembers ?? votes.length} team members voted
           </span>
         )}
       </div>

@@ -46,7 +46,7 @@ export function CalendarEventCard({
           <h4 className="text-sm font-medium text-gray-900 dark:text-white">
             {event.title}
           </h4>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+           <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             {onEdit && (
               <button
                 onClick={() => onEdit(event)}
@@ -57,7 +57,7 @@ export function CalendarEventCard({
             )}
             {onDelete && (
               <button
-                onClick={() => onDelete(event.id)}
+                onClick={() => { if (confirm("Delete this event?")) onDelete(event.id); }}
                 className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
               >
                 <Trash2 size={14} />

@@ -72,6 +72,7 @@ export function TimeTracker({ taskId }: TimeTrackerProps) {
   };
 
   const handleDelete = async (entry: TimeEntry) => {
+    if (!confirm("Delete this time entry?")) return;
     await deleteTimeEntry(supabase, entry.id);
     setEntries((prev) => prev.filter((e) => e.id !== entry.id));
     setTotalMinutes((prev) => prev - entry.minutes);

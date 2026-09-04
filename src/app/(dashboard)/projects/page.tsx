@@ -396,8 +396,8 @@ export default function ProjectsPage() {
       )}
 
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center gap-4">
+        <div className="fixed bottom-20 left-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg dark:border-gray-800 dark:bg-gray-900 sm:bottom-6 sm:w-auto sm:max-w-none">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {selectedIds.size} project{selectedIds.size !== 1 ? "s" : ""} selected
             </span>

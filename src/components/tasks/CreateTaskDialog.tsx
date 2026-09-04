@@ -72,6 +72,7 @@ export function CreateTaskDialog({
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -131,6 +132,7 @@ export function CreateTaskDialog({
       return;
     }
 
+    setIsSubmitting(true);
     try {
       onCreate({
         title: title.trim(),
@@ -148,6 +150,8 @@ export function CreateTaskDialog({
       showToast({ title: MESSAGES.TASK_CREATED, type: "success" });
     } catch {
       showToast({ title: MESSAGES.TASK_CREATE_FAILED, type: "error" });
+    } finally {
+      setIsSubmitting(false);
     }
 
     resetForm();
@@ -323,7 +327,9 @@ export function CreateTaskDialog({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Create Task</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Task"}
+          </Button>
         </div>
       </div>
 

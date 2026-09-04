@@ -51,9 +51,10 @@ export function CreateProjectDialog({
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       setErrors({ name: "Project name is required" });
       return;
@@ -67,6 +68,7 @@ export function CreateProjectDialog({
       return;
     }
 
+    setIsSubmitting(true);
     try {
       onCreate({
         name: name.trim(),
@@ -82,6 +84,8 @@ export function CreateProjectDialog({
       showToast({ title: MESSAGES.PROJECT_CREATED, type: "success" });
     } catch {
       showToast({ title: MESSAGES.PROJECT_CREATE_FAILED, type: "error" });
+    } finally {
+      setIsSubmitting(false);
     }
 
     resetForm();
@@ -241,7 +245,9 @@ export function CreateProjectDialog({
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>Create Project</Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Project"}
+            </Button>
           </div>
         </div>
       </Dialog>

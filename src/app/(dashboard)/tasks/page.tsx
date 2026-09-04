@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target } from "lucide-react";
+import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
 import TaskPriorityChart from "@/components/dashboard/TaskPriorityChart";
@@ -565,12 +565,31 @@ export default function TasksPage() {
 
           <div className="space-y-3">
             {filteredTasks.length === 0 ? (
-              <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
-                    ? "No tasks match your filters."
-                    : "No tasks yet. Create your first task to get started."}
-                </p>
+              <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center dark:border-gray-800 dark:bg-gray-900">
+                {searchQuery || statusFilter !== "all" || priorityFilter !== "all" ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No tasks match your filters.
+                  </p>
+                ) : (
+                  <>
+                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
+                      <CheckSquare size={24} className="text-navo-blue" />
+                    </div>
+                    <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                      No tasks yet
+                    </h3>
+                    <p className="mb-6 mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
+                      Tasks help you track and manage all your team's work. Create one to get started.
+                    </p>
+                    <button
+                      onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}
+                      className="inline-flex items-center gap-2 rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep transition-colors"
+                    >
+                      <Plus size={16} />
+                      Create your first task
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               filteredTasks.map((task) => (
@@ -666,8 +685,8 @@ export default function TasksPage() {
       />
 
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center gap-4">
+        <div className="fixed bottom-20 left-1/2 z-40 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:bottom-6 sm:w-auto sm:max-w-none">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <span className="whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
               {selectedIds.size} task{selectedIds.size !== 1 ? "s" : ""} selected
             </span>

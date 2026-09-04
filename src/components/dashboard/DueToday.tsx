@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, User } from "lucide-react";
+import { Calendar, CheckCircle, User } from "lucide-react";
 import { Task, TaskStatusConfig } from "@/types/task";
 
 interface DueTodayProps {
@@ -16,7 +16,16 @@ export default function DueToday({ tasks, statuses }: DueTodayProps) {
     (t) => t.due_date === today && t.status_id !== doneId
   );
 
-  if (dueToday.length === 0) return null;
+  if (dueToday.length === 0) {
+    return (
+      <div className="rounded-xl border border-green-200 bg-green-50/50 p-6 dark:border-green-900 dark:bg-green-900/10">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-green-700 dark:text-green-400">
+          <CheckCircle size={18} />
+          Nothing due today
+        </h2>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-6 dark:border-amber-900 dark:bg-amber-900/10">

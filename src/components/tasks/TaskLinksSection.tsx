@@ -62,6 +62,7 @@ export function TaskLinksSection({ taskId }: TaskLinksSectionProps) {
   };
 
   const handleRemove = async (id: string) => {
+    if (!confirm("Remove this link?")) return;
     await removeTaskLink(supabase, id);
     setLinks(links.filter((l) => l.id !== id));
     showToast({ title: MESSAGES.TASK_UNLINKED, type: "success" });

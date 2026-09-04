@@ -86,6 +86,7 @@ export function AttachmentSection({ taskId, onAttachmentsChanged }: AttachmentSe
   };
 
   const handleDelete = async (attachment: TaskAttachment) => {
+    if (!confirm("Delete this attachment?")) return;
     const success = await deleteAttachment(supabase, attachment.id, attachment.file_url);
     if (success) {
       showToast({ title: MESSAGES.ATTACHMENT_DELETED, type: "success" });

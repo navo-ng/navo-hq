@@ -172,17 +172,6 @@ export default function DocumentDetailPage() {
           </div>
         </div>
 
-        {document.description && (
-          <div className="mb-4">
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Description
-            </h3>
-            <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-900 dark:bg-gray-800 dark:text-white whitespace-pre-wrap">
-              {document.description}
-            </div>
-          </div>
-        )}
-
         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
           {document.category && (
             <span className="flex items-center gap-1">
