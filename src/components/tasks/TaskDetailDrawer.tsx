@@ -5,9 +5,9 @@ import { Drawer } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Task, TaskUser, TaskProject, TaskTag, TaskStatusConfig, TaskPriorityConfig } from "@/types/task";
-import { ActivityWithUser } from "@/types/activity";
 import { Calendar, User, Folder, Tag, Activity, MessageSquare, Check, ShieldAlert, Trash2, Pencil, Clock, Paperclip, ListChecks, Link2, Moon } from "lucide-react";
 import { CommentThread } from "@/components/comments/CommentThread";
+import { TaskActivityTimeline } from "./TaskActivityTimeline";
 import { TaskDependencySection } from "./TaskDependencySection";
 import { TimeTracker } from "./TimeTracker";
 import { AttachmentSection } from "./AttachmentSection";
@@ -19,7 +19,6 @@ import { createClient } from "@/lib/supabase/client";
 import { updateTaskOwner, fetchUsers, fetchProjects, fetchTags, fetchTaskStatuses, fetchTaskPriorities, updateTask } from "@/lib/data/tasks";
 import { logActivity } from "@/lib/data/log-activity";
 import { createNotification } from "@/lib/data/create-notification";
-import { fetchActivities } from "@/lib/data/activities";
 import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 
@@ -61,7 +60,6 @@ export function TaskDetailDrawer({
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [allUsers, setAllUsers] = useState<TaskUser[]>([]);
   const [allProjects, setAllProjects] = useState<TaskProject[]>([]);
   const [allTags, setAllTags] = useState<TaskTag[]>([]);
@@ -73,19 +71,6 @@ export function TaskDetailDrawer({
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [snoozedUntil, setSnoozedUntil] = useState<string | null>(task?.snoozed_until ?? null);
   const localTask = task ? { ...task, owner_id: ownerOverride ?? task.owner_id, snoozed_until: snoozedUntil } : null;
-
-  useEffect(() => {
-    if (!task || !open) return;
-    let cancelled = false;
-    fetchActivities(supabase, {
-      entityType: "task",
-      entityId: task.id,
-      limit: 5,
-    }).then((data) => {
-      if (!cancelled) setActivities(data);
-    });
-    return () => { cancelled = true; };
-  }, [task, open, supabase]);
 
   useEffect(() => {
     if (!open) return;
@@ -422,30 +407,7 @@ export function TaskDetailDrawer({
             <Activity size={14} />
             Activity
           </div>
-          {activities.length === 0 ? (
-            <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-400 dark:bg-gray-800/50">
-              No activity yet.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activities.map((a) => (
-                <div key={a.id} className="flex items-start gap-2 text-sm">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                    {a.user?.name?.charAt(0) || "?"}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {a.user?.name || "Someone"}
-                    </span>{" "}
-                    <span className="text-gray-500">{a.action}</span>
-                    <div className="text-xs text-gray-400">
-                      {new Date(a.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <TaskActivityTimeline taskId={localTask.id} />
         </div>
 
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">

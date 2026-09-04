@@ -1,68 +1,88 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Keyboard, X } from "lucide-react";
 
-const SHORTCUTS = [
-  { keys: ["Cmd", "K"], description: "Open search" },
-  { keys: ["Cmd", "C"], description: "New task" },
-  { keys: ["Cmd", "1"], description: "Dashboard" },
-  { keys: ["Cmd", "2"], description: "Tasks" },
-  { keys: ["Cmd", "3"], description: "Projects" },
-  { keys: ["Cmd", "4"], description: "Decisions" },
-  { keys: ["Cmd", "5"], description: "Documents" },
-  { keys: ["Cmd", "6"], description: "Calendar" },
-  { keys: ["Cmd", "7"], description: "Team" },
-  { keys: ["?"], description: "Show shortcuts" },
+import { Keyboard, LayoutDashboard, Search, PanelLeftClose, GripVertical } from "lucide-react";
+import { Dialog } from "@/components/ui/dialog";
+
+interface KeyboardShortcutsHelpProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const sections = [
+  {
+    title: "Navigation",
+    icon: LayoutDashboard,
+    shortcuts: [
+      { keys: ["⌘", "1"], label: "Dashboard" },
+      { keys: ["⌘", "2"], label: "Tasks" },
+      { keys: ["⌘", "3"], label: "Projects" },
+      { keys: ["⌘", "4"], label: "Team" },
+      { keys: ["⌘", "5"], label: "Decisions" },
+      { keys: ["⌘", "6"], label: "Documents" },
+      { keys: ["⌘", "7"], label: "Calendar" },
+    ],
+  },
+  {
+    title: "Actions",
+    icon: Search,
+    shortcuts: [
+      { keys: ["⌘", "K"], label: "Global Search" },
+      { keys: ["⌘", "N"], label: "New Task" },
+      { keys: ["⌘", "⇧", "S"], label: "Standup" },
+    ],
+  },
+  {
+    title: "View",
+    icon: PanelLeftClose,
+    shortcuts: [
+      { keys: ["⌘", "\\"], label: "Toggle Sidebar" },
+      { keys: ["?"], label: "Show Shortcuts" },
+    ],
+  },
+  {
+    title: "Task Board",
+    icon: GripVertical,
+    shortcuts: [
+      { keys: ["Drag"], label: "Reorder tasks" },
+      { keys: ["Click"], label: "Open task detail" },
+    ],
+  },
 ];
 
-export function KeyboardShortcutsHelp() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-        e.preventDefault();
-        setOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = () => setOpen(true);
-    document.addEventListener("open-shortcuts-help", handler);
-    return () => document.removeEventListener("open-shortcuts-help", handler);
-  }, []);
-
-  if (!open) return null;
-
+export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsHelpProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOpen(false)}>
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Keyboard Shortcuts</h2>
-          <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="space-y-2">
-          {SHORTCUTS.map((shortcut) => (
-            <div key={shortcut.description} className="flex items-center justify-between py-1.5">
-              <span className="text-sm text-gray-600 dark:text-gray-400">{shortcut.description}</span>
-              <div className="flex gap-1">
-                {shortcut.keys.map((key) => (
-                  <kbd key={key} className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                    {key}
-                  </kbd>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+    <Dialog open={open} onClose={() => onOpenChange(false)} title="Keyboard Shortcuts" maxWidth="lg">
+      <div className="flex items-center gap-2 mb-4">
+        <Keyboard size={18} className="text-gray-400" />
+        <span className="text-sm text-gray-500 dark:text-gray-400">Quick navigation shortcuts</span>
       </div>
-    </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {sections.map((section) => (
+          <div key={section.title}>
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+              <section.icon size={16} className="text-gray-400" />
+              {section.title}
+            </div>
+            <div className="space-y-2">
+              {section.shortcuts.map((shortcut) => (
+                <div key={shortcut.label} className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{shortcut.label}</span>
+                  <div className="flex items-center gap-1">
+                    {shortcut.keys.map((key, i) => (
+                      <span key={i} className="flex items-center">
+                        <kbd className="inline-flex h-6 min-w-[24px] items-center justify-center rounded border border-gray-300 bg-gray-100 px-1.5 font-mono text-[11px] font-medium text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                          {key}
+                        </kbd>
+                        {i < shortcut.keys.length - 1 && <span className="mx-0.5 text-gray-400">+</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Dialog>
   );
 }

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Project } from "@/types/project";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, CheckCircle } from "lucide-react";
+import { Calendar, Users, CheckCircle, Dot } from "lucide-react";
+import { computeProjectHealth, HEALTH_CONFIG } from "@/lib/utils/project-health";
 
 interface ProjectCardProps {
   project: Project;
@@ -37,6 +38,9 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
     new Date(project.target_date) < new Date() &&
     project.status?.name !== "Completed";
 
+  const health = computeProjectHealth(project);
+  const healthConfig = HEALTH_CONFIG[health];
+
   return (
     <Link
       href={`/projects/${project.id}`}
@@ -56,6 +60,10 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
         {project.status && (
           <Badge color={project.status.color}>{project.status.name}</Badge>
         )}
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${healthConfig.bg} ${healthConfig.text}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${healthConfig.dot}`} />
+          {healthConfig.label}
+        </span>
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-gray-400">

@@ -85,3 +85,24 @@ export async function fetchActivities(
 
   return (data || []).map(mapActivity);
 }
+
+export async function fetchTaskActivities(
+  supabase: SupabaseClient,
+  taskId: string,
+  limit = 20
+): Promise<ActivityWithUser[]> {
+  const { data, error } = await supabase
+    .from("activities")
+    .select(ACTIVITY_SELECT)
+    .eq("entity_type", "task")
+    .eq("entity_id", taskId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Error fetching task activities:", error);
+    return [];
+  }
+
+  return (data || []).map(mapActivity);
+}

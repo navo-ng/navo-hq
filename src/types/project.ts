@@ -48,6 +48,7 @@ export interface Project {
   members?: ProjectMember[];
   tags?: ProjectTag[];
   task_stats?: ProjectTaskStats;
+  health?: "green" | "yellow" | "red";
 }
 
 export interface CreateProjectInput {

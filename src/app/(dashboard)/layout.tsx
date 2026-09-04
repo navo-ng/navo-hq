@@ -17,11 +17,13 @@ import { BottomNav } from "@/components/layout/BottomNav";
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const toggleSearch = useCallback(() => setSearchOpen((prev) => !prev), []);
   const { newNotification, clearNewNotification } = useNotifications();
 
   useKeyboardShortcuts([
     { key: "k", meta: true, action: () => setSearchOpen(true), description: "Open search" },
+    { key: "?", action: () => setShortcutsOpen(true), description: "Show keyboard shortcuts" },
   ]);
 
   return (
@@ -40,7 +42,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         notification={newNotification}
         onDismiss={clearNewNotification}
       />
-      <KeyboardShortcutsHelp />
+      <KeyboardShortcutsHelp open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <BottomNav />
     </>
   );
