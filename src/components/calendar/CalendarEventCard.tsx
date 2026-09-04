@@ -17,6 +17,7 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   milestone: "#10B981",
   event: "#8B5CF6",
   reminder: "#F59E0B",
+  external: "#6366f1",
 };
 
 function formatEventTime(event: CalendarEvent): string {
@@ -75,7 +76,7 @@ export function CalendarEventCard({
             <CalendarIcon size={12} />
             {formatEventTime(event)}
           </span>
-          <Badge color={color}>{event.type}</Badge>
+          <Badge color={color}>{event.type === "external" ? "Google Calendar" : event.type}</Badge>
         </div>
       </div>
     </div>

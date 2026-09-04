@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList, FileText, Webhook, Shield, CircleDot } from "lucide-react";
+import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList, FileText, Webhook, Shield, CircleDot, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TeamSetting, UserSetting } from "@/types/settings";
@@ -108,6 +108,46 @@ export default function SettingsPage() {
       showToast({ title: "Failed to save preferences", type: "error" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async (format: "json" | "csv") => {
+    setExporting(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch("/api/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ format }),
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `navo-export.${format === "csv" ? "csv" : "json"}`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast({ title: `Exported as ${format.toUpperCase()}`, type: "success" });
+      } else {
+        showToast({ title: "Export failed", type: "error" });
+      }
+    } catch {
+      showToast({ title: "Export failed", type: "error" });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -367,6 +407,26 @@ export default function SettingsPage() {
               {saving ? "Saving..." : "Save Preferences"}
             </Button>
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex items-center gap-2">
+          <Download size={18} className="text-gray-400" />
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+            Export Data
+          </h2>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Download all your workspace data including tasks, projects, decisions, documents, calendar events, and standups.
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={() => handleExport("json")} disabled={exporting}>
+            {exporting ? "Exporting..." : "Export as JSON"}
+          </Button>
+          <Button onClick={() => handleExport("csv")} disabled={exporting} variant="secondary">
+            {exporting ? "Exporting..." : "Export as CSV"}
+          </Button>
         </div>
       </div>
     </div>

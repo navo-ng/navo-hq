@@ -3,12 +3,19 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Search, Loader2, Command } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { SearchResults } from "./SearchResults";
 
 interface SearchPaletteProps {
   open: boolean;
   onClose: () => void;
+}
+
+interface ApiSearchResult {
+  type: string;
+  id: string;
+  title: string;
+  subtitle: string;
+  url: string;
 }
 
 const RECENT_KEY = "navo_search_recent";
@@ -32,7 +39,6 @@ function addRecentSearch(query: string) {
 
 export function SearchPalette({ open, onClose }: SearchPaletteProps) {
   const router = useRouter();
-  const supabase = createClient();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{
@@ -108,87 +114,34 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
       }
 
       setLoading(true);
-      const q = searchQuery.trim();
 
       try {
-        const [tasksRes, projectsRes, decisionsRes, documentsRes, teamRes, eventsRes, commentsRes] = await Promise.all([
-          supabase
-            .from("tasks")
-            .select("id, title, description")
-            .ilike("title", `%${q}%`)
-            .eq("is_archived", false)
-            .limit(5),
-          supabase
-            .from("projects")
-            .select("id, name, description")
-            .ilike("name", `%${q}%`)
-            .eq("is_archived", false)
-            .limit(5),
-          supabase
-            .from("decisions")
-            .select("id, title, context")
-            .ilike("title", `%${q}%`)
-            .eq("is_archived", false)
-            .limit(5),
-          supabase
-            .from("documents")
-            .select("id, title, description")
-            .ilike("title", `%${q}%`)
-            .eq("is_archived", false)
-            .limit(5),
-          supabase
-            .from("profiles")
-            .select("id, name, email, avatar_url")
-            .eq("is_active", true)
-            .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
-            .limit(5),
-          supabase
-            .from("calendar_events")
-            .select("id, title, description, event_date, event_time")
-            .ilike("title", `%${q}%`)
-            .eq("is_archived", false)
-            .limit(5),
-          supabase
-            .from("comments")
-            .select("id, content, entity_type, entity_id")
-            .ilike("content", `%${q}%`)
-            .limit(5),
-        ]);
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: searchQuery.trim(), limit: 20 }),
+        });
+        const data = await res.json();
+        const apiResults: ApiSearchResult[] = data.results || [];
 
         setResults({
-          tasks: tasksRes.data || [],
-          projects: (projectsRes.data || []).map((p) => ({
-            id: p.id,
-            title: p.name,
-            description: p.description,
-          })),
-          decisions: (decisionsRes.data || []).map((d) => ({
-            id: d.id,
-            title: d.title,
-            description: d.context,
-          })),
-          documents: documentsRes.data || [],
-          team: (teamRes.data || []).map((u) => ({
-            id: u.id,
-            title: u.name || u.email,
-            description: u.email,
-            email: u.email,
-            avatar_url: u.avatar_url,
-          })),
-          events: (eventsRes.data || []).map((e) => ({
-            id: e.id,
-            title: e.title,
-            description: e.description,
-            event_date: e.event_date,
-            event_time: e.event_time,
-          })),
-          comments: (commentsRes.data || []).map((c) => ({
-            id: c.id,
-            title: c.content.slice(0, 80),
-            description: `${c.entity_type} comment`,
-            entity_type: c.entity_type,
-            entity_id: c.entity_id,
-          })),
+          tasks: apiResults
+            .filter((r) => r.type === "task")
+            .map((r) => ({ id: r.id, title: r.title, description: r.subtitle })),
+          projects: apiResults
+            .filter((r) => r.type === "project")
+            .map((r) => ({ id: r.id, title: r.title, description: r.subtitle })),
+          decisions: apiResults
+            .filter((r) => r.type === "decision")
+            .map((r) => ({ id: r.id, title: r.title, description: r.subtitle })),
+          documents: apiResults
+            .filter((r) => r.type === "document")
+            .map((r) => ({ id: r.id, title: r.title, description: r.subtitle })),
+          team: apiResults
+            .filter((r) => r.type === "team")
+            .map((r) => ({ id: r.id, title: r.title, description: r.subtitle, email: r.subtitle })),
+          events: [],
+          comments: [],
         });
       } catch (err) {
         console.error("Search error:", err);
@@ -196,7 +149,7 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
         setLoading(false);
       }
     },
-    [supabase]
+    []
   );
 
   const handleInputChange = (value: string) => {

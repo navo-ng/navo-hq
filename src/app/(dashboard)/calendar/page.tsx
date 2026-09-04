@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List, Download, Link } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List, Download, Link, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { CreateEventDialog } from "@/components/calendar/CreateEventDialog";
+import { ExternalCalendarDialog } from "@/components/calendar/ExternalCalendarDialog";
 import { CalendarEvent, CreateCalendarEventInput, UpdateCalendarEventInput } from "@/types/calendar";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/lib/hooks/useToast";
@@ -15,6 +16,7 @@ import {
   deleteEvent,
 } from "@/lib/data/calendar";
 import { generateICS, downloadICS, generateCalendarSubscriptionUrl } from "@/lib/utils/ics";
+import { parseICS, ParsedEvent } from "@/lib/utils/ical-parser";
 import { MESSAGES } from "@/lib/utils/messages";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -42,6 +44,8 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [externalCalOpen, setExternalCalOpen] = useState(false);
+  const [externalEvents, setExternalEvents] = useState<CalendarEvent[]>([]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -61,6 +65,64 @@ export default function CalendarPage() {
       if (data.user) setUserId(data.user.id);
     });
   }, [supabase]);
+
+  const fetchExternalCalendars = useCallback(async () => {
+    if (!userId) return;
+    const { data: calendars } = await supabase
+      .from("external_calendars")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_active", true);
+    if (!calendars || calendars.length === 0) {
+      setExternalEvents([]);
+      return;
+    }
+
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+    const allExternal: CalendarEvent[] = [];
+
+    for (const cal of calendars) {
+      try {
+        const res = await fetch(`/api/calendar/external?url=${encodeURIComponent(cal.url)}`);
+        if (!res.ok) continue;
+        const icsText = await res.text();
+        const parsed = parseICS(icsText);
+
+        for (const evt of parsed) {
+          const eventDate = evt.dtstart.slice(0, 10);
+          const eventTime = evt.dtstart.length > 10 ? evt.dtstart.slice(11, 16) : null;
+          const extEndDate = evt.dtend ? evt.dtend.slice(0, 10) : null;
+          const extEndTime = evt.dtend && evt.dtend.length > 10 ? evt.dtend.slice(11, 16) : null;
+
+          if (eventDate >= startDate && eventDate <= endDate) {
+            allExternal.push({
+              id: `ext-${cal.id}-${evt.uid}`,
+              title: evt.summary,
+              description: evt.description || null,
+              event_date: eventDate,
+              event_time: eventTime,
+              end_date: extEndDate,
+              end_time: extEndTime,
+              type: "external",
+              entity_type: "external_calendar",
+              entity_id: cal.id,
+              created_by: userId,
+              is_archived: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          }
+        }
+      } catch {
+        // Skip failed calendars silently
+      }
+    }
+
+    setExternalEvents(allExternal);
+  }, [userId, supabase, year, month]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,16 +147,26 @@ export default function CalendarPage() {
     };
   }, [supabase, year, month]);
 
+  useEffect(() => {
+    if (!isLoading && userId) {
+      fetchExternalCalendars();
+    }
+  }, [isLoading, userId, fetchExternalCalendars]);
+
+  const allEvents = useMemo(() => {
+    return [...events, ...externalEvents];
+  }, [events, externalEvents]);
+
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
-    for (const event of events) {
+    for (const event of allEvents) {
       if (!map[event.event_date]) {
         map[event.event_date] = [];
       }
       map[event.event_date].push(event);
     }
     return map;
-  }, [events]);
+  }, [allEvents]);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -202,6 +274,10 @@ export default function CalendarPage() {
           <Link size={16} />
           Subscribe
         </Button>
+        <Button onClick={() => setExternalCalOpen(true)} variant="secondary" className="shrink-0">
+          <Calendar size={16} />
+          Add Calendar
+        </Button>
         <div className="flex shrink-0 items-center rounded-lg border border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setViewMode("grid")}
@@ -269,7 +345,7 @@ export default function CalendarPage() {
                   {day}
                 </div>
               ))}
-              {events.length === 0 && (
+              {allEvents.length === 0 && (
                 <div className="col-span-7 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
                   No events this month
                 </div>
@@ -303,24 +379,29 @@ export default function CalendarPage() {
                       {day}
                     </span>
                     <div className="mt-0.5 space-y-0.5">
-                      {dayEvents.slice(0, 2).map((event) => (
-                        <div
-                          key={event.id}
-                          className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white hidden sm:block"
-                          style={{
-                            backgroundColor:
-                              event.type === "meeting"
-                                ? "#0064F0"
-                                : event.type === "deadline"
-                                ? "#EF4444"
-                                : event.type === "milestone"
-                                ? "#10B981"
-                                : "#8B5CF6",
-                          }}
-                        >
-                          {event.title}
-                        </div>
-                      ))}
+                      {dayEvents.slice(0, 2).map((event) => {
+                        const extCal = event.type === "external"
+                          ? externalEvents.find(e => e.id === event.id)
+                          : null;
+                        const bgColor = event.type === "external"
+                          ? (extCal ? "#6366f1" : "#6366f1")
+                          : event.type === "meeting"
+                          ? "#0064F0"
+                          : event.type === "deadline"
+                          ? "#EF4444"
+                          : event.type === "milestone"
+                          ? "#10B981"
+                          : "#8B5CF6";
+                        return (
+                          <div
+                            key={event.id}
+                            className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white hidden sm:block"
+                            style={{ backgroundColor: bgColor }}
+                          >
+                            {event.title}
+                          </div>
+                        );
+                      })}
                       {dayEvents.length > 2 && (
                         <span className="block text-center text-[10px] text-gray-400">
                           +{dayEvents.length - 2} more
@@ -333,7 +414,7 @@ export default function CalendarPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {events.length === 0 ? (
+              {allEvents.length === 0 ? (
                 <p className="py-12 text-center text-sm text-gray-400">
                   No events this month
                 </p>
@@ -405,12 +486,12 @@ export default function CalendarPage() {
             )
           ) : (
             <div className="space-y-2">
-              {events.length === 0 ? (
+              {allEvents.length === 0 ? (
                 <p className="py-8 text-center text-sm text-gray-400">
                   No upcoming events
                 </p>
               ) : (
-                events.slice(0, 5).map((event) => (
+                allEvents.slice(0, 5).map((event) => (
                   <CalendarEventCard
                     key={event.id}
                     event={event}
@@ -432,6 +513,13 @@ export default function CalendarPage() {
         onUpdate={handleUpdateEvent}
         editingEvent={editingEvent}
         selectedDate={selectedDate || undefined}
+      />
+      <ExternalCalendarDialog
+        open={externalCalOpen}
+        onClose={() => {
+          setExternalCalOpen(false);
+          fetchExternalCalendars();
+        }}
       />
     </div>
   );
