@@ -117,7 +117,7 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
       </Link>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex items-start gap-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
           <div
             className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
             style={{ backgroundColor: "#0064F0" }}
@@ -133,11 +133,21 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                {member.name}
-              </h1>
-              {isOwner && member.id !== currentUserId ? (
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              {member.name}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1">
+                <Mail size={14} />
+                {member.email}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar size={14} />
+                Joined {formatJoinDate(member.created_at)}
+              </span>
+            </div>
+            {isOwner && member.id !== currentUserId && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <RoleManager
                   userId={member.id}
                   currentRoleId={member.role_id || ""}
@@ -151,10 +161,6 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
                     });
                   }}
                 />
-              ) : member.role ? (
-                <Badge color="#0064F0">{member.role.name}</Badge>
-              ) : null}
-              {isOwner && member.id !== currentUserId && (
                 <Button
                   variant="danger"
                   size="sm"
@@ -163,18 +169,13 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
                   <Trash2 size={14} />
                   Remove
                 </Button>
-              )}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1">
-                <Mail size={14} />
-                {member.email}
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar size={14} />
-                Joined {formatJoinDate(member.created_at)}
-              </span>
-            </div>
+              </div>
+            )}
+            {!isOwner && member.role && (
+              <div className="mt-3">
+                <Badge color="#0064F0">{member.role.name}</Badge>
+              </div>
+            )}
           </div>
         </div>
       </div>
