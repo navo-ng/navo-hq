@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme inline {
   --color-navo-blue: #0064F0;
   --color-navo-deep: #003CB4;
