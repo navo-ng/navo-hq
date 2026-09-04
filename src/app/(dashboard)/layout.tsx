@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Sidebar, SidebarProvider } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { SearchPalette } from "@/components/search/SearchPalette";
 import { NotificationToast } from "@/components/notifications/NotificationToast";
 import { ToastProvider } from "@/components/ui/toast";
@@ -54,19 +53,17 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider>
-      <UserProvider>
-        <ToastProvider>
-          <NotificationsProvider>
-            <OnboardingProvider>
-              <SidebarProvider>
-                <DashboardInner>{children}</DashboardInner>
-                <OnboardingOverlay />
-              </SidebarProvider>
-            </OnboardingProvider>
-          </NotificationsProvider>
-        </ToastProvider>
-      </UserProvider>
-    </ThemeProvider>
+    <UserProvider>
+      <ToastProvider>
+        <NotificationsProvider>
+          <OnboardingProvider>
+            <SidebarProvider>
+              <DashboardInner>{children}</DashboardInner>
+              <OnboardingOverlay />
+            </SidebarProvider>
+          </OnboardingProvider>
+        </NotificationsProvider>
+      </ToastProvider>
+    </UserProvider>
   );
 }
