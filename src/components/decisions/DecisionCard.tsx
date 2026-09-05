@@ -11,6 +11,7 @@ interface DecisionCardProps {
   votes?: DecisionVote[];
   onEdit: (decision: Decision) => void;
   onDelete: (decision: Decision) => void;
+  isViewer?: boolean;
 }
 
 function formatDate(dateStr: string): string {
@@ -22,7 +23,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export function DecisionCard({ decision, votes = [], onEdit, onDelete }: DecisionCardProps) {
+export function DecisionCard({ decision, votes = [], onEdit, onDelete, isViewer }: DecisionCardProps) {
   const contributorCount = decision.contributors?.length || 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -61,38 +62,40 @@ export function DecisionCard({ decision, votes = [], onEdit, onDelete }: Decisio
             {decision.status && (
               <Badge color={decision.status.color}>{decision.status.name}</Badge>
             )}
-            <div className="relative" ref={menuRef} onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
-              >
-                <MoreHorizontal size={16} />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onEdit(decision);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
-                  >
-                    <Pencil size={14} />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onDelete(decision);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
+            {!isViewer && (
+              <div className="relative" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onEdit(decision);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                      <Pencil size={14} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onDelete(decision);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                    >
+                      <Trash2 size={14} />
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

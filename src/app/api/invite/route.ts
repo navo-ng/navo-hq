@@ -14,6 +14,48 @@ function generateRandomPassword(length = 16): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnon = createClient(
+      supabaseUrl,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: { user: caller } } = await supabaseAnon.auth.getUser(token);
+    if (!caller) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: callerProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role_id")
+      .eq("id", caller.id)
+      .single();
+
+    if (!callerProfile?.role_id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { data: callerRole } = await supabaseAdmin
+      .from("roles")
+      .select("name")
+      .eq("id", callerProfile.role_id)
+      .single();
+
+    if (callerRole?.name !== "owner" && callerRole?.name !== "admin") {
+      return NextResponse.json({ error: "Only owners and admins can invite members" }, { status: 403 });
+    }
+
     const { email, role_id, message } = await req.json();
 
     if (!email || !role_id) {
@@ -23,7 +65,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     const supabase = createClient(

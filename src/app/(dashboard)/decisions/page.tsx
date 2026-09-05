@@ -20,8 +20,11 @@ import {
   fetchDecisionVotes,
 } from "@/lib/data/decisions";
 import { ErrorState } from "@/components/ui/error-state";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 export default function DecisionsPage() {
+  const { role } = useCurrentUser();
+  const isViewer = role === "viewer";
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [statuses, setStatuses] = useState<DecisionStatusConfig[]>([]);
   const [users, setUsers] = useState<DecisionUser[]>([]);
@@ -235,10 +238,12 @@ export default function DecisionsPage() {
             Track and manage team decisions
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-          <Plus size={16} />
-          New Decision
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+            <Plus size={16} />
+            New Decision
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -288,6 +293,18 @@ export default function DecisionsPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               No decisions match your filters.
             </p>
+          ) : isViewer ? (
+            <>
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
+                <Vote size={24} className="text-navo-blue" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                No decisions yet
+              </h3>
+              <p className="mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
+                No decisions have been created yet.
+              </p>
+            </>
           ) : (
             <>
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
@@ -318,6 +335,7 @@ export default function DecisionsPage() {
               votes={votesMap[decision.id] || []}
               onEdit={setEditingDecision}
               onDelete={setDeletingDecision}
+              isViewer={isViewer}
             />
           ))}
         </div>

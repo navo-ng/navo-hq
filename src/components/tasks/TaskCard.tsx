@@ -11,6 +11,7 @@ interface TaskCardProps {
   task: Task;
   onClick: (task: Task) => void;
   onDelete?: (task: Task) => void;
+  isViewer?: boolean;
 }
 
 function isOverdue(task: Task): boolean {
@@ -86,7 +87,7 @@ function DependencyIndicator({ taskId }: { taskId: string }) {
   );
 }
 
-export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onClick, onDelete, isViewer }: TaskCardProps) {
   const overdue = isOverdue(task);
   const statusName = task.status?.name || "Unknown";
   const statusColor = task.status?.color || "#9CA3AF";

@@ -31,6 +31,7 @@ interface TaskDetailDrawerProps {
   onUpdated?: () => void;
   statuses: TaskStatusConfig[];
   users?: TaskUser[];
+  isViewer?: boolean;
 }
 
 function formatDate(dateStr: string): string {
@@ -56,6 +57,7 @@ export function TaskDetailDrawer({
   onUpdated,
   statuses,
   users = [],
+  isViewer,
 }: TaskDetailDrawerProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -183,26 +185,28 @@ export function TaskDetailDrawer({
   return (
     <Drawer open={open} onClose={onClose} title="Task Details">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setEditDialogOpen(true)}
-            className="text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
-          >
-            <Pencil size={14} className="mr-1" />
-            Edit
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDeleteDialogOpen(true)}
-            className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-          >
-            <Trash2 size={14} />
-            Delete
-          </Button>
-        </div>
+        {!isViewer && (
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditDialogOpen(true)}
+              className="text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+            >
+              <Pencil size={14} className="mr-1" />
+              Edit
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+            >
+              <Trash2 size={14} />
+              Delete
+            </Button>
+          </div>
+        )}
         <div>
           <div className="mb-2 flex flex-wrap gap-2">
             <Badge color={priorityColor}>{priorityName}</Badge>
@@ -240,71 +244,79 @@ export function TaskDetailDrawer({
           </div>
         )}
 
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSnoozeOpen(!snoozeOpen)}
-            className="text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
-          >
-            <Moon size={14} className="mr-1" />
-            {snoozedUntil ? "Reschedule" : "Snooze"}
-          </Button>
-          {snoozeOpen && (
-            <div className="absolute left-0 z-10 mt-1 w-56 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
-              <button
-                onClick={() => handleSnooze(1)}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-              >
-                Tomorrow
-              </button>
-              <button
-                onClick={() => handleSnooze(7)}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-              >
-                Next week
-              </button>
-              <div className="border-t border-gray-100 dark:border-gray-800">
-                <div className="px-3 py-2">
-                  <label className="mb-1 block text-xs text-gray-500">Custom date</label>
-                  <input
-                    type="date"
-                    onChange={(e) => e.target.value && handleSnoozeCustom(e.target.value)}
-                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                  />
-                </div>
-              </div>
-              {snoozedUntil && (
+        {!isViewer && (
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSnoozeOpen(!snoozeOpen)}
+              className="text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+            >
+              <Moon size={14} className="mr-1" />
+              {snoozedUntil ? "Reschedule" : "Snooze"}
+            </Button>
+            {snoozeOpen && (
+              <div className="absolute left-0 z-10 mt-1 w-56 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                <button
+                  onClick={() => handleSnooze(1)}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Tomorrow
+                </button>
+                <button
+                  onClick={() => handleSnooze(7)}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Next week
+                </button>
                 <div className="border-t border-gray-100 dark:border-gray-800">
-                  <button
-                    onClick={() => handleSnooze(null)}
-                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                  >
-                    Clear snooze
-                  </button>
+                  <div className="px-3 py-2">
+                    <label className="mb-1 block text-xs text-gray-500">Custom date</label>
+                    <input
+                      type="date"
+                      onChange={(e) => e.target.value && handleSnoozeCustom(e.target.value)}
+                      className="w-full rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+                {snoozedUntil && (
+                  <div className="border-t border-gray-100 dark:border-gray-800">
+                    <button
+                      onClick={() => handleSnooze(null)}
+                      className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    >
+                      Clear snooze
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
               <User size={14} className="text-gray-400" />
               <span className="text-gray-500">Assignee:</span>
-              <select
-                value={localTask.owner_id || ""}
-                onChange={(e) => handleOwnerChange(e.target.value)}
-                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-900 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              >
-                <option value="">Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
+              {isViewer ? (
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {users.find((u) => u.id === localTask.owner_id)?.name || "Unassigned"}
+                </span>
+              ) : (
+                <select
+                  value={localTask.owner_id || ""}
+                  onChange={(e) => handleOwnerChange(e.target.value)}
+                  className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-900 focus:border-navo-blue focus:outline-none focus:ring-1 focus:ring-navo-blue dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Folder size={14} className="text-gray-400" />
@@ -354,7 +366,7 @@ export function TaskDetailDrawer({
           </div>
         )}
 
-        {onStatusChange && (
+        {onStatusChange && !isViewer && (
           <div>
             <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               Change Status

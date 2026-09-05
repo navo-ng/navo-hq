@@ -25,6 +25,7 @@
   --foreground: #ededed;
   --accent: #0064F0;
   --accent-hover: #3b82f6;
+  --tooltip-border: #374151;
 }
 
 /* Theme color variants */

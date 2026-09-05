@@ -250,8 +250,8 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
     new Date(project.target_date) < new Date() &&
     project.status?.name !== "Completed";
 
-  const isOwnerOrAdmin = currentUserRole === "admin" || currentUserRole === null;
-  const isEditorOrAbove = currentUserRole === "editor" || currentUserRole === "admin" || currentUserRole === null;
+  const isOwnerOrAdmin = currentUserRole === "admin";
+  const isEditorOrAbove = currentUserRole === "editor" || currentUserRole === "admin";
 
   const overviewStats = [
     {
@@ -472,7 +472,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
               allUsers={allUsers}
               onAddMember={handleAddMember}
               onRemoveMember={handleRemoveMember}
-              canManage={currentUserRole === "admin" || currentUserRole === null}
+              canManage={isOwnerOrAdmin}
               onManageClick={() => setMembersDialogOpen(true)}
             />
 

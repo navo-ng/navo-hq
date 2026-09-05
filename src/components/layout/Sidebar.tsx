@@ -161,6 +161,7 @@ export function Sidebar() {
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
               <ChevronRight size={16} />
@@ -236,6 +237,7 @@ export function Sidebar() {
               <button
                 onClick={() => setMobileOpen(false)}
                 className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Close menu"
               >
                 <X size={18} />
               </button>

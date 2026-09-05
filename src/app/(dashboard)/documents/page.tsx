@@ -17,8 +17,11 @@ import {
 } from "@/lib/data/documents";
 import { fetchAllUsers, fetchAllTags } from "@/lib/data/projects";
 import { ErrorState } from "@/components/ui/error-state";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 export default function DocumentsPage() {
+  const { role } = useCurrentUser();
+  const isViewer = role === "viewer";
   const [documents, setDocuments] = useState<DocDocument[]>([]);
   const [statuses, setStatuses] = useState<DocumentStatusConfig[]>([]);
   const [users, setUsers] = useState<DocumentUser[]>([]);
@@ -226,10 +229,12 @@ export default function DocumentsPage() {
             Manage and track your team&apos;s documents
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-          <Plus size={16} />
-          New Document
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+            <Plus size={16} />
+            New Document
+          </Button>
+        )}
       </div>
 
       {documents.length === 0 ? (
@@ -252,17 +257,25 @@ export default function DocumentsPage() {
           <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
             No documents yet
           </h3>
-          <p className="mb-6 mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
-            Documents help your team store, share, and track important files.
-            Create your first document to get started.
-          </p>
-          <button
-            onClick={() => setCreateDialogOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep transition-colors"
-          >
-            <Plus size={16} />
-            Create your first document
-          </button>
+          {isViewer ? (
+            <p className="mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
+              No documents have been created yet.
+            </p>
+          ) : (
+            <>
+              <p className="mb-6 mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
+                Documents help your team store, share, and track important files.
+                Create your first document to get started.
+              </p>
+              <button
+                onClick={() => setCreateDialogOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep transition-colors"
+              >
+                <Plus size={16} />
+                Create your first document
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <>
@@ -332,6 +345,7 @@ export default function DocumentsPage() {
                   document={doc}
                   onEdit={setEditingDocument}
                   onDelete={setDeletingDocument}
+                  isViewer={isViewer}
                 />
               ))}
             </div>

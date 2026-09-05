@@ -18,6 +18,7 @@ import {
 import { generateICS, downloadICS, generateCalendarSubscriptionUrl } from "@/lib/utils/ics";
 import { parseICS, ParsedEvent } from "@/lib/utils/ical-parser";
 import { MESSAGES } from "@/lib/utils/messages";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -35,6 +36,8 @@ function formatDateKey(year: number, month: number, day: number): string {
 
 export default function CalendarPage() {
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const isViewer = role === "viewer";
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -199,22 +202,41 @@ export default function CalendarPage() {
   };
 
   const handleCreateEvent = async (input: CreateCalendarEventInput) => {
-    const event = await createEvent(supabase, input);
-    if (event) {
-      setEvents((prev) => [...prev, event]);
+    try {
+      const event = await createEvent(supabase, input);
+      if (event) {
+        setEvents((prev) => [...prev, event]);
+        showToast({ title: MESSAGES.EVENT_CREATED, type: "success" });
+      }
+    } catch (err) {
+      console.error("Failed to create event:", err);
+      showToast({ title: "Failed to create event", type: "error" });
     }
   };
 
   const handleUpdateEvent = async (eventId: string, input: UpdateCalendarEventInput) => {
-    const updated = await updateEvent(supabase, eventId, input);
-    if (updated) {
-      setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
+    try {
+      const updated = await updateEvent(supabase, eventId, input);
+      if (updated) {
+        setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
+        showToast({ title: MESSAGES.EVENT_UPDATED, type: "success" });
+      }
+    } catch (err) {
+      console.error("Failed to update event:", err);
+      showToast({ title: "Failed to update event", type: "error" });
     }
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    await deleteEvent(supabase, eventId);
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+    try {
+      await deleteEvent(supabase, eventId);
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+      showToast({ title: MESSAGES.EVENT_DELETED, type: "success" });
+    } catch (err) {
+      console.error("Failed to delete event:", err);
+      showToast({ title: "Failed to delete event", type: "error" });
+    }
   };
 
   const handleEditEvent = (event: CalendarEvent) => {
@@ -262,10 +284,12 @@ export default function CalendarPage() {
             Manage your schedule and events
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-          <Plus size={16} />
-          New Event
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+            <Plus size={16} />
+            New Event
+          </Button>
+        )}
         <Button onClick={handleExportICS} variant="secondary" className="shrink-0">
           <Download size={16} />
           Export .ics
@@ -286,6 +310,7 @@ export default function CalendarPage() {
                 ? "bg-navo-blue text-white"
                 : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}
+            aria-label="Grid view"
           >
             <LayoutGrid size={16} />
           </button>
@@ -296,6 +321,7 @@ export default function CalendarPage() {
                 ? "bg-navo-blue text-white"
                 : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}
+            aria-label="List view"
           >
             <List size={16} />
           </button>
@@ -309,6 +335,7 @@ export default function CalendarPage() {
               <button
                 onClick={prevMonth}
                 className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Previous month"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -318,6 +345,7 @@ export default function CalendarPage() {
               <button
                 onClick={nextMonth}
                 className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Next month"
               >
                 <ChevronRight size={18} />
               </button>
@@ -435,8 +463,8 @@ export default function CalendarPage() {
                           <CalendarEventCard
                             key={event.id}
                             event={event}
-                            onEdit={handleEditEvent}
-                            onDelete={handleDeleteEvent}
+                            onEdit={isViewer ? undefined : handleEditEvent}
+                            onDelete={isViewer ? undefined : handleDeleteEvent}
                           />
                         ))}
                       </div>

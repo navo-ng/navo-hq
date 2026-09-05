@@ -16,10 +16,13 @@ import {
   fetchUserSettings,
   updateUserSetting,
 } from "@/lib/data/settings";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { ShieldAlert } from "lucide-react";
 
 export default function SettingsPage() {
   const { theme: activeTheme, setTheme: setGlobalTheme } = useTheme();
   const { showToast } = useToast();
+  const { role, loading: userLoading } = useCurrentUser();
   const [teamSettings, setTeamSettings] = useState<TeamSetting[]>([]);
   const [userSettings, setUserSettings] = useState<UserSetting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -196,6 +199,8 @@ export default function SettingsPage() {
     );
   }
 
+  const isAdmin = role === "owner" || role === "admin";
+
   return (
     <div className="space-y-6">
       <div>
@@ -207,6 +212,17 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      {!userLoading && !isAdmin && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center dark:border-gray-800 dark:bg-gray-900">
+          <ShieldAlert size={48} className="mx-auto mb-4 text-red-400" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Admin Only</h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Team settings and management features are restricted to owners and admins.
+          </p>
+        </div>
+      )}
+
+      {isAdmin && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href="/settings/tags"
@@ -321,7 +337,9 @@ export default function SettingsPage() {
           </div>
         </Link>
       </div>
+      )}
 
+      {isAdmin && (
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-4 flex items-center gap-2">
           <Users size={18} className="text-gray-400" />
@@ -364,6 +382,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+      )}
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-4 flex items-center gap-2">

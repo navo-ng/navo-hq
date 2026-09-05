@@ -291,11 +291,11 @@ export default function TimeReportsPage() {
           <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Hours per Day (Last 7 Days)</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700" stroke="#E5E7EB" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip
-                contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }}
+                contentStyle={{ borderRadius: 8, border: "1px solid var(--tooltip-border, #E5E7EB)" }}
                 formatter={(value: any) => [`${value}h`, "Hours"]}
               />
               <Bar dataKey="hours" fill="#0064F0" radius={[4, 4, 0, 0]} />
@@ -325,7 +325,7 @@ export default function TimeReportsPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }}
+                  contentStyle={{ borderRadius: 8, border: "1px solid var(--tooltip-border, #E5E7EB)" }}
                   formatter={(value: any) => [`${value}h`, "Hours"]}
                 />
                 <Legend />

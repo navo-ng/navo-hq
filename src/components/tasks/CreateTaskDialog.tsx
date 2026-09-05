@@ -125,10 +125,12 @@ export function CreateTaskDialog({
     }
 
     if (!statusId) {
+      showToast({ title: "Status is required. Please select a status.", type: "error" });
       return;
     }
 
     if (!priorityId) {
+      showToast({ title: "Priority is required. Please select a priority.", type: "error" });
       return;
     }
 

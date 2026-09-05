@@ -10,9 +10,10 @@ interface DocumentCardProps {
   document: DocDocument;
   onEdit: (document: DocDocument) => void;
   onDelete: (document: DocDocument) => void;
+  isViewer?: boolean;
 }
 
-export function DocumentCard({ document: doc, onEdit, onDelete }: DocumentCardProps) {
+export function DocumentCard({ document: doc, onEdit, onDelete, isViewer }: DocumentCardProps) {
   const versionCount = doc.versions?.length || 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -48,42 +49,44 @@ export function DocumentCard({ document: doc, onEdit, onDelete }: DocumentCardPr
           {doc.status && (
             <Badge color={doc.status.color}>{doc.status.name}</Badge>
           )}
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(!menuOpen); }}
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
-            >
-              <MoreHorizontal size={16} />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setMenuOpen(false);
-                    onEdit(doc);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
-                >
-                  <Pencil size={14} />
-                  Edit
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setMenuOpen(false);
-                    onDelete(doc);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
+          {!isViewer && (
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(!menuOpen); }}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      onEdit(doc);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    <Pencil size={14} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      onDelete(doc);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

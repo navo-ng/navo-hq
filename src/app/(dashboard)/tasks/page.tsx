@@ -36,6 +36,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { printTaskReport } from "@/lib/utils/pdf-export";
 import { tasksToCSV, downloadCSV } from "@/lib/utils/csv-export";
 import { useToast } from "@/lib/hooks/useToast";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { MESSAGES } from "@/lib/utils/messages";
 
 export default function TasksPage() {
@@ -72,6 +73,8 @@ export default function TasksPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const isViewer = role === "viewer";
 
   const supabase = createClient();
 
@@ -244,6 +247,7 @@ export default function TasksPage() {
   };
 
   const isDragDisabled =
+    isViewer ||
     searchQuery !== "" ||
     statusFilter !== "all" ||
     priorityFilter !== "all" ||
@@ -335,42 +339,62 @@ export default function TasksPage() {
 
   const handleBatchStatusChange = async (statusId: string) => {
     if (selectedIds.size === 0 || !statusId) return;
-    await batchUpdateTasks(supabase, Array.from(selectedIds), { status_id: statusId });
-    setSelectedIds(new Set());
-    setBatchStatusId("");
-    refetchTasks();
+    try {
+      await batchUpdateTasks(supabase, Array.from(selectedIds), { status_id: statusId });
+      setSelectedIds(new Set());
+      setBatchStatusId("");
+      refetchTasks();
+      showToast({ title: MESSAGES.STATUS_UPDATED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to update status", type: "error" });
+    }
   };
 
   const handleBatchAssign = async (ownerId: string) => {
     if (selectedIds.size === 0 || !ownerId) return;
-    await batchUpdateTasks(supabase, Array.from(selectedIds), { owner_id: ownerId });
-    setSelectedIds(new Set());
-    setBatchOwnerId("");
-    refetchTasks();
+    try {
+      await batchUpdateTasks(supabase, Array.from(selectedIds), { owner_id: ownerId });
+      setSelectedIds(new Set());
+      setBatchOwnerId("");
+      refetchTasks();
+      showToast({ title: MESSAGES.TASK_UPDATED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to assign tasks", type: "error" });
+    }
   };
 
   const handleBatchArchive = async () => {
     if (selectedIds.size === 0) return;
-    await batchUpdateTasks(supabase, Array.from(selectedIds), { is_archived: true });
-    setSelectedIds(new Set());
-    refetchTasks();
+    try {
+      await batchUpdateTasks(supabase, Array.from(selectedIds), { is_archived: true });
+      setSelectedIds(new Set());
+      refetchTasks();
+      showToast({ title: MESSAGES.TASK_UPDATED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to archive tasks", type: "error" });
+    }
   };
 
   const handleStatusChange = async (taskId: string, statusId: string) => {
-    await updateTaskStatus(supabase, taskId, statusId);
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const status = statuses.find((s) => s.id === statusId);
-        return {
-          ...t,
-          status_id: statusId,
-          status,
-          completed_at:
-            status?.name === "Done" ? new Date().toISOString() : null,
-        };
-      })
-    );
+    try {
+      await updateTaskStatus(supabase, taskId, statusId);
+      setTasks((prev) =>
+        prev.map((t) => {
+          if (t.id !== taskId) return t;
+          const status = statuses.find((s) => s.id === statusId);
+          return {
+            ...t,
+            status_id: statusId,
+            status,
+            completed_at:
+              status?.name === "Done" ? new Date().toISOString() : null,
+          };
+        })
+      );
+      showToast({ title: MESSAGES.STATUS_UPDATED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to update status", type: "error" });
+    }
   };
 
   const handleExportCSV = () => {
@@ -445,10 +469,12 @@ export default function TasksPage() {
             <Download size={16} />
             Export CSV
           </Button>
-          <Button variant="secondary" onClick={() => setImportOpen(true)}>
-            <Upload size={16} />
-            Import CSV
-          </Button>
+          {!isViewer && (
+            <Button variant="secondary" onClick={() => setImportOpen(true)}>
+              <Upload size={16} />
+              Import CSV
+            </Button>
+          )}
           <div className="flex rounded-lg border border-gray-300 dark:border-gray-700">
             <button
               onClick={() => setViewMode("list")}
@@ -457,6 +483,7 @@ export default function TasksPage() {
                   ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
+              aria-label="List view"
             >
               <List size={14} />
               List
@@ -468,31 +495,38 @@ export default function TasksPage() {
                   ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
+              aria-label="Board view"
             >
               <LayoutGrid size={14} />
               Board
             </button>
           </div>
-          <Button variant="secondary" onClick={() => setMeetingNotesOpen(true)}>
-            <FileText size={16} />
-            Meeting Notes
-          </Button>
-          <Button variant="secondary" onClick={() => setBreakdownOpen(true)}>
-            <Sparkles size={16} />
-            Break Down
-          </Button>
-          <Button variant="secondary" onClick={() => setScoreMatrixOpen(true)}>
-            <Target size={16} />
-            Score Matrix
-          </Button>
-          <Button variant="secondary" onClick={() => setTemplateDialogOpen(true)}>
-            <Copy size={16} />
-            Templates
-          </Button>
-          <Button onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}>
-            <Plus size={16} />
-            New Task
-          </Button>
+          {!isViewer && (
+            <>
+              <Button variant="secondary" onClick={() => setMeetingNotesOpen(true)}>
+                <FileText size={16} />
+                Meeting Notes
+              </Button>
+              <Button variant="secondary" onClick={() => setBreakdownOpen(true)}>
+                <Sparkles size={16} />
+                Break Down
+              </Button>
+              <Button variant="secondary" onClick={() => setScoreMatrixOpen(true)}>
+                <Target size={16} />
+                Score Matrix
+              </Button>
+              <Button variant="secondary" onClick={() => setTemplateDialogOpen(true)}>
+                <Copy size={16} />
+                Templates
+              </Button>
+            </>
+          )}
+          {!isViewer && (
+            <Button onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}>
+              <Plus size={16} />
+              New Task
+            </Button>
+          )}
         </div>
       </div>
 
@@ -561,13 +595,14 @@ export default function TasksPage() {
 
       {viewMode === "list" ? (
         <>
-          {filteredTasks.length > 0 && !isDragDisabled && (
+          {filteredTasks.length > 0 && !isDragDisabled && !isViewer && (
             <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
               <input
                 type="checkbox"
                 checked={selectedIds.size === filteredTasks.length && filteredTasks.length > 0}
                 onChange={toggleSelectAll}
                 className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                aria-label="Select all tasks"
               />
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {selectedIds.size === 0
@@ -584,7 +619,7 @@ export default function TasksPage() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     No tasks match your filters.
                   </p>
-                ) : (
+                ) : isViewer ? (
                   <>
                     <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
                       <CheckSquare size={24} className="text-navo-blue" />
@@ -592,17 +627,29 @@ export default function TasksPage() {
                     <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
                       No tasks yet
                     </h3>
-                    <p className="mb-6 mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
-                      Tasks help you track and manage all your team's work. Create one to get started.
+                    <p className="mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
+                      No tasks have been created yet.
                     </p>
-                    <button
-                      onClick={() => { setCreateTaskStatusId(null); setCreateDialogOpen(true); }}
-                      className="inline-flex items-center gap-2 rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep transition-colors"
-                    >
-                      <Plus size={16} />
-                      Create your first task
-                    </button>
                   </>
+                ) : (
+                    <>
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
+                        <CheckSquare size={24} className="text-navo-blue" />
+                      </div>
+                      <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                        Create your first task
+                      </h3>
+                      <p className="mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
+                        Get started by creating a task to track your work.
+                      </p>
+                      <button
+                        onClick={() => setCreateDialogOpen(true)}
+                        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep"
+                      >
+                        <Plus size={16} />
+                        New Task
+                      </button>
+                    </>
                 )}
               </div>
             ) : (
@@ -619,7 +666,7 @@ export default function TasksPage() {
                   } ${overId === task.id && draggedId !== task.id ? "border-2 border-navo-blue rounded-xl" : ""}`}
                 >
                   <div className="flex items-center gap-1">
-                    {!isDragDisabled && (
+                    {!isDragDisabled && !isViewer && (
                       <>
                         <input
                           type="checkbox"
@@ -634,7 +681,7 @@ export default function TasksPage() {
                       </>
                     )}
                     <div className="flex-1 min-w-0">
-                      <TaskCard task={task} onClick={handleTaskClick} />
+                      <TaskCard task={task} onClick={handleTaskClick} isViewer={isViewer} />
                     </div>
                   </div>
                 </div>
@@ -648,7 +695,7 @@ export default function TasksPage() {
           statuses={statuses}
           onTaskClick={handleTaskClick}
           onTaskMoved={refetchTasks}
-          onCreateTask={(statusId) => {
+          onCreateTask={isViewer ? undefined : (statusId) => {
             setCreateTaskStatusId(statusId);
             setCreateDialogOpen(true);
           }}
@@ -679,6 +726,7 @@ export default function TasksPage() {
         onUpdated={handleTaskUpdated}
         statuses={statuses}
         users={users}
+        isViewer={isViewer}
       />
 
       <TaskBreakdownDialog
@@ -720,7 +768,7 @@ export default function TasksPage() {
         onCreated={refetchTasks}
       />
 
-      {selectedIds.size > 0 && (
+      {!isViewer && selectedIds.size > 0 && (
         <div className="fixed bottom-20 left-1/2 z-40 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:bottom-6 sm:w-auto sm:max-w-none">
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <span className="whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">

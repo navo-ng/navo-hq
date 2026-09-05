@@ -36,6 +36,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
         <button
           onClick={() => setMobileOpen(true)}
           className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+          aria-label="Open menu"
         >
           <Menu size={20} />
         </button>
@@ -48,6 +49,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
         <button
           onClick={onSearchClick}
           className="flex items-center gap-1.5 rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+          aria-label="Search"
         >
           <Search size={18} />
           <span className="hidden text-xs text-gray-400 sm:inline">⌘K</span>
@@ -65,6 +67,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="Toggle theme"
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>

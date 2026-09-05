@@ -9,11 +9,14 @@ import { TeamRole } from "@/types/team";
 import { createClient } from "@/lib/supabase/client";
 import { fetchRoles } from "@/lib/data/team";
 import { useToastContext } from "@/components/ui/toast";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { ShieldAlert } from "lucide-react";
 
 export default function InviteMemberPage() {
   const router = useRouter();
   const { showToast } = useToastContext();
   const supabase = createClient();
+  const { role, loading: userLoading } = useCurrentUser();
 
   const [roles, setRoles] = useState<TeamRole[]>([]);
   const [email, setEmail] = useState("");
@@ -43,9 +46,19 @@ export default function InviteMemberPage() {
 
     setIsSubmitting(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        showToast({ title: "Not authenticated", type: "error" });
+        return;
+      }
+
       const res = await fetch("/api/invite", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ email, role_id: roleId, message }),
       });
 
@@ -77,6 +90,29 @@ export default function InviteMemberPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (!userLoading && role !== "owner" && role !== "admin") {
+    return (
+      <div className="mx-auto max-w-lg space-y-6">
+        <div>
+          <button
+            onClick={() => router.push("/team")}
+            className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <ArrowLeft size={16} />
+            Back to Team
+          </button>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
+          <ShieldAlert size={48} className="mx-auto mb-4 text-red-400" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Access Denied</h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Only owners and admins can invite team members.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (inviteResult) {
     return (
