@@ -1,7 +1,28 @@
-export function renderMarkdown(text: string): string {
-  if (!text) return "";
+import DOMPurify from "isomorphic-dompurify";
 
-  let html = text
+const MARKDOWN_SANITIZER_CONFIG: DOMPurify.Config = {
+  ALLOWED_TAGS: [
+    "h1", "h2", "h3",
+    "p", "br", "blockquote", "pre", "code",
+    "strong", "em", "del",
+    "ul", "ol", "li",
+    "a", "img",
+  ],
+  ALLOWED_ATTR: [
+    "href", "target", "rel", "title",
+    "src", "alt", "width", "height",
+    "class",
+  ],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^:]|$))/i,
+  ADD_ATTR: ["target"],
+  FORBID_TAGS: ["script", "style", "iframe", "form", "object", "embed"],
+  FORBID_ATTR: ["onerror", "onload", "onclick"],
+};
+
+export function renderMarkdown(content: string): string {
+  if (!content) return "";
+
+  let html = content
     // Code blocks (triple backtick)
     .replace(/```([\s\S]*?)```/g, '<pre class="rounded-lg bg-gray-100 dark:bg-gray-800 p-3 my-2 overflow-x-auto text-sm"><code>$1</code></pre>')
     // Inline code
@@ -23,12 +44,12 @@ export function renderMarkdown(text: string): string {
     // Ordered lists
     .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal text-gray-700 dark:text-gray-300">$1</li>')
     // Line breaks
-    .replace(/\n/g, '<br />');
+    .replace(/\n/g, "<br />");
 
   // Wrap consecutive list items
   html = html.replace(/(<li[^>]*>.*?<\/li>(\s*<br\s*\/?>)?)+/g, (match) => {
     return `<ul class="my-1">${match.replace(/<br \/>/g, "")}</ul>`;
   });
 
-  return html;
+  return DOMPurify.sanitize(html, MARKDOWN_SANITIZER_CONFIG);
 }
