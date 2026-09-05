@@ -31,14 +31,22 @@ export default function TeamPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [memberData, roleData] = await Promise.all([
-        fetchTeam(supabase),
-        fetchRoles(supabase),
-      ]);
-      if (!cancelled) {
-        setMembers(memberData);
-        setRoles(roleData);
-        setIsLoading(false);
+      try {
+        const [memberData, roleData] = await Promise.all([
+          fetchTeam(supabase),
+          fetchRoles(supabase),
+        ]);
+        if (!cancelled) {
+          setMembers(memberData);
+          setRoles(roleData);
+        }
+      } catch {
+        if (!cancelled) {
+          setMembers([]);
+          setRoles([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
     load();

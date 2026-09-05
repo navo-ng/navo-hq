@@ -73,20 +73,28 @@ export default function ActivityPage() {
       setIsLoading(true);
       setActivities([]);
       setHasMore(true);
-      const dateRange = DATE_RANGES[dateRangeIndex].getRange();
-      const data = await fetchActivities(supabase, {
-        entityType: entityFilter || undefined,
-        userId: userFilter || undefined,
-        action: actionFilter || undefined,
-        dateFrom: dateRange.from,
-        dateTo: dateRange.to,
-        limit: PAGE_SIZE,
-        offset: 0,
-      });
-      if (!cancelled) {
-        setActivities(data);
-        setHasMore(data.length >= PAGE_SIZE);
-        setIsLoading(false);
+      try {
+        const dateRange = DATE_RANGES[dateRangeIndex].getRange();
+        const data = await fetchActivities(supabase, {
+          entityType: entityFilter || undefined,
+          userId: userFilter || undefined,
+          action: actionFilter || undefined,
+          dateFrom: dateRange.from,
+          dateTo: dateRange.to,
+          limit: PAGE_SIZE,
+          offset: 0,
+        });
+        if (!cancelled) {
+          setActivities(data);
+          setHasMore(data.length >= PAGE_SIZE);
+        }
+      } catch {
+        if (!cancelled) {
+          setActivities([]);
+          setHasMore(false);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
     load();
@@ -95,19 +103,24 @@ export default function ActivityPage() {
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
-    const dateRange = DATE_RANGES[dateRangeIndex].getRange();
-    const data = await fetchActivities(supabase, {
-      entityType: entityFilter || undefined,
-      userId: userFilter || undefined,
-      action: actionFilter || undefined,
-      dateFrom: dateRange.from,
-      dateTo: dateRange.to,
-      limit: PAGE_SIZE,
-      offset: activities.length,
-    });
-    setActivities((prev) => [...prev, ...data]);
-    setHasMore(data.length >= PAGE_SIZE);
-    setIsLoadingMore(false);
+    try {
+      const dateRange = DATE_RANGES[dateRangeIndex].getRange();
+      const data = await fetchActivities(supabase, {
+        entityType: entityFilter || undefined,
+        userId: userFilter || undefined,
+        action: actionFilter || undefined,
+        dateFrom: dateRange.from,
+        dateTo: dateRange.to,
+        limit: PAGE_SIZE,
+        offset: activities.length,
+      });
+      setActivities((prev) => [...prev, ...data]);
+      setHasMore(data.length >= PAGE_SIZE);
+    } catch {
+      // silently fail on load more
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const removeFilter = (key: string) => {
