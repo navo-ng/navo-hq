@@ -13,6 +13,7 @@ import {
   markAllRead as dbMarkAllRead,
 } from "@/lib/data/notifications";
 import { formatRelativeTime } from "@/lib/utils/relative-time";
+import { useToast } from "@/lib/hooks/useToast";
 
 const PAGE_SIZE = 50;
 
@@ -49,6 +50,7 @@ type FilterTab = "all" | "unread";
 
 export default function NotificationsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const supabase = createClient();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -87,35 +89,49 @@ export default function NotificationsPage() {
   }, [supabase, filter]);
 
   const handleLoadMore = async () => {
-    setIsLoadingMore(true);
-    const uid = (await supabase.auth.getUser()).data.user?.id;
-    if (!uid) { setIsLoadingMore(false); return; }
-    const data = await fetchNotifications(supabase, uid, {
-      unreadOnly: filter === "unread",
-      limit: PAGE_SIZE,
-      offset: notifications.length,
-    });
-    setNotifications((prev) => [...prev, ...data]);
-    setTotalCount((prev) => prev + data.length);
-    setHasMore(data.length >= PAGE_SIZE);
-    setIsLoadingMore(false);
+    try {
+      setIsLoadingMore(true);
+      const uid = (await supabase.auth.getUser()).data.user?.id;
+      if (!uid) { setIsLoadingMore(false); return; }
+      const data = await fetchNotifications(supabase, uid, {
+        unreadOnly: filter === "unread",
+        limit: PAGE_SIZE,
+        offset: notifications.length,
+      });
+      setNotifications((prev) => [...prev, ...data]);
+      setTotalCount((prev) => prev + data.length);
+      setHasMore(data.length >= PAGE_SIZE);
+      setIsLoadingMore(false);
+    } catch {
+      showToast({ title: "Failed to load more notifications", type: "error" });
+      setIsLoadingMore(false);
+    }
   };
 
   const handleMarkAllRead = async () => {
-    const uid = (await supabase.auth.getUser()).data.user?.id;
-    if (!uid) return;
-    await dbMarkAllRead(supabase, uid);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    setUnreadCount(0);
+    try {
+      const uid = (await supabase.auth.getUser()).data.user?.id;
+      if (!uid) return;
+      await dbMarkAllRead(supabase, uid);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+      showToast({ title: "All notifications marked as read", type: "success" });
+    } catch {
+      showToast({ title: "Failed to mark all as read", type: "error" });
+    }
   };
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read) {
-      await dbMarkAsRead(supabase, notification.id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      try {
+        await dbMarkAsRead(supabase, notification.id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } catch {
+        showToast({ title: "Failed to mark notification as read", type: "error" });
+      }
     }
     const route = getRoute(notification.entity_type, notification.entity_id);
     if (route) router.push(route);

@@ -21,8 +21,11 @@ import {
 } from "@/lib/data/decisions";
 import { ErrorState } from "@/components/ui/error-state";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 
 export default function DecisionsPage() {
+  const { showToast } = useToast();
   const { role } = useCurrentUser();
   const isViewer = role === "viewer";
   const [decisions, setDecisions] = useState<Decision[]>([]);
@@ -158,8 +161,12 @@ export default function DecisionsPage() {
   }, [decisions]);
 
   const refetchDecisions = async () => {
-    const data = await fetchDecisions(supabase, { sort: "newest" });
-    setDecisions(data);
+    try {
+      const data = await fetchDecisions(supabase, { sort: "newest" });
+      setDecisions(data);
+    } catch {
+      showToast({ title: "Failed to refetch decisions", type: "error" });
+    }
   };
 
   const handleCreateDecision = async (input: {
@@ -176,9 +183,14 @@ export default function DecisionsPage() {
     contributor_ids: string[];
     tag_ids: string[];
   }) => {
-    const decision = await createDecision(supabase, input);
-    if (decision) {
-      setDecisions((prev) => [decision, ...prev]);
+    try {
+      const decision = await createDecision(supabase, input);
+      if (decision) {
+        setDecisions((prev) => [decision, ...prev]);
+        showToast({ title: MESSAGES.DECISION_CREATED, type: "success" });
+      }
+    } catch {
+      showToast({ title: "Failed to create decision", type: "error" });
     }
   };
 

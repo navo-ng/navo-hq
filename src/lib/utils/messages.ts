@@ -11,6 +11,7 @@ export const MESSAGES = {
   ROLE_CHANGED: "{name}'s role has been changed to {role}",
   DECISION_CREATED: "Decision created successfully",
   DECISION_VOTED: "Your vote has been recorded",
+  DOCUMENT_CREATED: "Document created successfully",
   COMMENT_POSTED: "Comment posted successfully",
   TIME_LOGGED: "Time logged successfully",
   TEMPLATE_CREATED: "Template created successfully",

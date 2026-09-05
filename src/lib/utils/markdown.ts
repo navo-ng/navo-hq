@@ -1,6 +1,7 @@
 import DOMPurify from "isomorphic-dompurify";
+import type { Config as DOMPurifyConfig } from "dompurify";
 
-const MARKDOWN_SANITIZER_CONFIG: DOMPurify.Config = {
+const MARKDOWN_SANITIZER_CONFIG: DOMPurifyConfig = {
   ALLOWED_TAGS: [
     "h1", "h2", "h3",
     "p", "br", "blockquote", "pre", "code",
@@ -51,5 +52,5 @@ export function renderMarkdown(content: string): string {
     return `<ul class="my-1">${match.replace(/<br \/>/g, "")}</ul>`;
   });
 
-  return DOMPurify.sanitize(html, MARKDOWN_SANITIZER_CONFIG);
+  return DOMPurify.sanitize(html, MARKDOWN_SANITIZER_CONFIG) as string;
 }

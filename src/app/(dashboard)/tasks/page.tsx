@@ -213,21 +213,26 @@ export default function TasksPage() {
     recurrence: string;
     recurrence_end_date: string;
   }) => {
-    const task = await createTask(supabase, {
-      title: newTask.title,
-      description: newTask.description || undefined,
-      owner_id: newTask.owner_id || undefined,
-      project_id: newTask.project_id || undefined,
-      status_id: newTask.status_id,
-      priority_id: newTask.priority_id,
-      due_date: newTask.due_date || undefined,
-      tag_ids: newTask.tag_ids,
-      recurrence: newTask.recurrence || "none",
-      recurrence_end_date: newTask.recurrence_end_date || undefined,
-    });
+    try {
+      const task = await createTask(supabase, {
+        title: newTask.title,
+        description: newTask.description || undefined,
+        owner_id: newTask.owner_id || undefined,
+        project_id: newTask.project_id || undefined,
+        status_id: newTask.status_id,
+        priority_id: newTask.priority_id,
+        due_date: newTask.due_date || undefined,
+        tag_ids: newTask.tag_ids,
+        recurrence: newTask.recurrence || "none",
+        recurrence_end_date: newTask.recurrence_end_date || undefined,
+      });
 
-    if (task) {
-      setTasks((prev) => [task, ...prev]);
+      if (task) {
+        setTasks((prev) => [task, ...prev]);
+      }
+      showToast({ title: MESSAGES.TASK_CREATED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to create task", type: "error" });
     }
   };
 
@@ -237,13 +242,21 @@ export default function TasksPage() {
   };
 
   const handleTaskDeleted = async () => {
-    const taskData = await fetchTasks(supabase);
-    setTasks(taskData);
+    try {
+      const taskData = await fetchTasks(supabase);
+      setTasks(taskData);
+    } catch {
+      showToast({ title: "Failed to load tasks", type: "error" });
+    }
   };
 
   const handleTaskUpdated = async () => {
-    const taskData = await fetchTasks(supabase);
-    setTasks(taskData);
+    try {
+      const taskData = await fetchTasks(supabase);
+      setTasks(taskData);
+    } catch {
+      showToast({ title: "Failed to load tasks", type: "error" });
+    }
   };
 
   const isDragDisabled =
@@ -398,10 +411,14 @@ export default function TasksPage() {
   };
 
   const handleExportCSV = () => {
-    const csv = tasksToCSV(filteredTasks as unknown as Record<string, unknown>[]);
-    const date = new Date().toISOString().split("T")[0];
-    downloadCSV(csv, `navo-tasks-${date}.csv`);
-    showToast({ title: MESSAGES.CSV_EXPORTED, type: "success" });
+    try {
+      const csv = tasksToCSV(filteredTasks as unknown as Record<string, unknown>[]);
+      const date = new Date().toISOString().split("T")[0];
+      downloadCSV(csv, `navo-tasks-${date}.csv`);
+      showToast({ title: MESSAGES.CSV_EXPORTED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to export CSV", type: "error" });
+    }
   };
 
   if (isLoading) {

@@ -164,8 +164,12 @@ export default function ProjectsPage() {
   }, [projects]);
 
   const handleProjectDeleted = async () => {
-    const projectData = await fetchProjects(supabase, { sort: "newest" });
-    setProjects(projectData);
+    try {
+      const projectData = await fetchProjects(supabase, { sort: "newest" });
+      setProjects(projectData);
+    } catch {
+      showToast({ title: "Failed to load projects", type: "error" });
+    }
   };
 
   const handleCreateProject = async (input: {
@@ -178,9 +182,14 @@ export default function ProjectsPage() {
     member_ids: string[];
     tag_ids: string[];
   }) => {
-    const project = await createProject(supabase, input);
-    if (project) {
-      setProjects((prev) => [project, ...prev]);
+    try {
+      const project = await createProject(supabase, input);
+      if (project) {
+        setProjects((prev) => [project, ...prev]);
+      }
+      showToast({ title: MESSAGES.PROJECT_CREATED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to create project", type: "error" });
     }
   };
 
@@ -204,28 +213,36 @@ export default function ProjectsPage() {
   const clearSelection = () => setSelectedIds(new Set());
 
   const handleBulkArchive = async () => {
-    const ids = Array.from(selectedIds);
-    for (const id of ids) {
-      await archiveProject(supabase, id);
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) {
+        await archiveProject(supabase, id);
+      }
+      showToast({
+        title: MESSAGES.PROJECTS_ARCHIVED.replace("{count}", String(ids.length)),
+        type: "success",
+      });
+      setSelectedIds(new Set());
+      refetchProjects();
+    } catch {
+      showToast({ title: "Failed to archive projects", type: "error" });
     }
-    showToast({
-      title: MESSAGES.PROJECTS_ARCHIVED.replace("{count}", String(ids.length)),
-      type: "success",
-    });
-    setSelectedIds(new Set());
-    refetchProjects();
   };
 
   const handleBulkStatusChange = async () => {
     if (!bulkStatusId) return;
-    const ids = Array.from(selectedIds);
-    for (const id of ids) {
-      await updateProject(supabase, id, { status_id: bulkStatusId });
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) {
+        await updateProject(supabase, id, { status_id: bulkStatusId });
+      }
+      showToast({ title: MESSAGES.PROJECT_STATUS_CHANGED, type: "success" });
+      setSelectedIds(new Set());
+      setBulkStatusId("");
+      refetchProjects();
+    } catch {
+      showToast({ title: "Failed to update project status", type: "error" });
     }
-    showToast({ title: MESSAGES.PROJECT_STATUS_CHANGED, type: "success" });
-    setSelectedIds(new Set());
-    setBulkStatusId("");
-    refetchProjects();
   };
 
   const isAllSelected =

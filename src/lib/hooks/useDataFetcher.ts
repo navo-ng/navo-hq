@@ -81,8 +81,7 @@ export function useDataFetcher<T>(
           err instanceof Error ? err : new Error(String(err));
         setError(normalizedError);
         showToast({
-          title: errorMessage,
-          description: normalizedError.message || "An unexpected error occurred.",
+          title: `${errorMessage}: ${normalizedError.message || "An unexpected error occurred."}`,
           type: "error",
         });
         onErrorRef.current?.(normalizedError);

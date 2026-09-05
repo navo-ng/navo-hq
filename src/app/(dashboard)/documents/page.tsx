@@ -18,8 +18,11 @@ import {
 import { fetchAllUsers, fetchAllTags } from "@/lib/data/projects";
 import { ErrorState } from "@/components/ui/error-state";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 
 export default function DocumentsPage() {
+  const { showToast } = useToast();
   const { role } = useCurrentUser();
   const isViewer = role === "viewer";
   const [documents, setDocuments] = useState<DocDocument[]>([]);
@@ -146,8 +149,12 @@ export default function DocumentsPage() {
   }, [documents]);
 
   const refetchDocuments = async () => {
-    const data = await fetchDocuments(supabase, { sort: "newest" });
-    setDocuments(data);
+    try {
+      const data = await fetchDocuments(supabase, { sort: "newest" });
+      setDocuments(data);
+    } catch {
+      showToast({ title: "Failed to refetch documents", type: "error" });
+    }
   };
 
   const handleCreateDocument = async (input: {
@@ -159,17 +166,22 @@ export default function DocumentsPage() {
     status_id: string;
     tag_ids: string[];
   }) => {
-    const doc = await createDocument(supabase, {
-      title: input.title,
-      description: input.description || undefined,
-      category: input.category || undefined,
-      owner_id: input.owner_id,
-      project_id: input.project_id || undefined,
-      status_id: input.status_id,
-      tag_ids: input.tag_ids,
-    });
-    if (doc) {
-      setDocuments((prev) => [doc, ...prev]);
+    try {
+      const doc = await createDocument(supabase, {
+        title: input.title,
+        description: input.description || undefined,
+        category: input.category || undefined,
+        owner_id: input.owner_id,
+        project_id: input.project_id || undefined,
+        status_id: input.status_id,
+        tag_ids: input.tag_ids,
+      });
+      if (doc) {
+        setDocuments((prev) => [doc, ...prev]);
+        showToast({ title: MESSAGES.DOCUMENT_CREATED, type: "success" });
+      }
+    } catch {
+      showToast({ title: "Failed to create document", type: "error" });
     }
   };
 
