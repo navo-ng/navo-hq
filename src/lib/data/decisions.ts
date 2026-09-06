@@ -397,6 +397,42 @@ export async function fetchDecisionVotes(
   }));
 }
 
+export async function fetchDecisionVotesBatch(
+  supabase: SupabaseClient,
+  decisionIds: string[]
+): Promise<Record<string, DecisionVote[]>> {
+  if (decisionIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("decision_votes")
+    .select("*, user:profiles(id, name, email, avatar_url)")
+    .in("decision_id", decisionIds)
+    .order("created_at");
+
+  if (error) {
+    console.error("Error fetching decision votes (batch):", error);
+    return {};
+  }
+
+  const map: Record<string, DecisionVote[]> = {};
+  for (const id of decisionIds) {
+    map[id] = [];
+  }
+
+  for (const v of data || []) {
+    const did = v.decision_id as string;
+    map[did] = map[did] || [];
+    map[did].push({
+      ...v,
+      user: v.user
+        ? { id: v.user.id, name: v.user.name, email: v.user.email, avatar_url: v.user.avatar_url }
+        : undefined,
+    });
+  }
+
+  return map;
+}
+
 export async function castVote(
   supabase: SupabaseClient,
   decisionId: string,

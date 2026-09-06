@@ -36,10 +36,10 @@ export function Dialog({
 
   if (!open) return null;
 
-  const maxWidths = {
-    sm: "max-w-sm",
-    md: "max-w-md",
-    lg: "max-w-lg",
+  const maxWidthClasses = {
+    sm: "sm:max-w-sm",
+    md: "sm:max-w-md",
+    lg: "sm:max-w-lg",
   };
 
   return (
@@ -52,7 +52,7 @@ export function Dialog({
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative z-10 w-full max-w-full sm:${maxWidths[maxWidth]} mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900`}
+        className={`relative z-10 w-full max-w-full ${maxWidthClasses[maxWidth]} mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900`}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -61,7 +61,7 @@ export function Dialog({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <X size={18} />
           </button>

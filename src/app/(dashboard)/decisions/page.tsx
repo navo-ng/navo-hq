@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DecisionCard } from "@/components/decisions/DecisionCard";
@@ -21,6 +21,7 @@ import {
 } from "@/lib/data/decisions";
 import { ErrorState } from "@/components/ui/error-state";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
 import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 
@@ -34,8 +35,6 @@ export default function DecisionsPage() {
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [votesMap, setVotesMap] = useState<Record<string, DecisionVote[]>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -46,50 +45,34 @@ export default function DecisionsPage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const [decisionData, statusData, userData, projectData, tagData] =
-          await Promise.all([
-            fetchDecisions(supabase, { sort: "newest" }),
-            fetchDecisionStatuses(supabase),
-            fetchAllUsers(supabase),
-            fetchAllProjects(supabase),
-            fetchAllTags(supabase),
-          ]);
-        if (!cancelled) {
-          setDecisions(decisionData);
-          setStatuses(statusData);
-          setUsers(userData);
-          setProjects(projectData);
-          setTags(tagData);
+  const { isLoading, error, refetch } = useDataFetcher(async (signal) => {
+    const [decisionData, statusData, userData, projectData, tagData] =
+      await Promise.all([
+        fetchDecisions(supabase, { sort: sort as "newest" | "oldest" | "title" | "decided" }),
+        fetchDecisionStatuses(supabase),
+        fetchAllUsers(supabase),
+        fetchAllProjects(supabase),
+        fetchAllTags(supabase),
+      ]);
 
-          const votesResults = await Promise.all(
-            decisionData.map((d) => fetchDecisionVotes(supabase, d.id))
-          );
-          if (!cancelled) {
-            const map: Record<string, DecisionVote[]> = {};
-            decisionData.forEach((d, i) => {
-              map[d.id] = votesResults[i];
-            });
-            setVotesMap(map);
-          }
+    setDecisions(decisionData);
+    setStatuses(statusData);
+    setUsers(userData);
+    setProjects(projectData);
+    setTags(tagData);
 
-          setIsLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setError("Failed to load decisions. Please try again.");
-          setIsLoading(false);
-        }
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
+    const votesResults = await Promise.all(
+      decisionData.map((d) => fetchDecisionVotes(supabase, d.id))
+    );
+    const map: Record<string, DecisionVote[]> = {};
+    decisionData.forEach((d, i) => {
+      map[d.id] = votesResults[i];
+    });
+    setVotesMap(map);
+  }, {
+    deps: [sort],
+    errorMessage: "Failed to load decisions. Please try again.",
+  });
 
   const filteredDecisions = useMemo(() => {
     let result = [...decisions];
@@ -160,14 +143,7 @@ export default function DecisionsPage() {
     return result;
   }, [decisions]);
 
-  const refetchDecisions = async () => {
-    try {
-      const data = await fetchDecisions(supabase, { sort: "newest" });
-      setDecisions(data);
-    } catch {
-      showToast({ title: "Failed to refetch decisions", type: "error" });
-    }
-  };
+  const refetchDecisions = refetch;
 
   const handleCreateDecision = async (input: {
     title: string;
@@ -234,7 +210,7 @@ export default function DecisionsPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Decisions</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Track and manage team decisions</p>
         </div>
-        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); window.location.reload(); }} />
+        <ErrorState message={error.message} onRetry={refetch} />
       </div>
     );
   }

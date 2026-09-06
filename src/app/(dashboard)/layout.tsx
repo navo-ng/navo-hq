@@ -31,7 +31,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header onSearchClick={toggleSearch} />
-          <main className="flex-1 overflow-y-auto bg-gray-50 p-3 pb-20 sm:p-6 md:pb-6 dark:bg-gray-950">
+          <main className="flex-1 overflow-y-auto bg-gray-50 p-3 pb-20 sm:p-6 sm:pb-20 md:p-6 dark:bg-gray-950">
             {children}
           </main>
         </div>

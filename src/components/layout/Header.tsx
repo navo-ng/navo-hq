@@ -48,7 +48,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
       <div className="flex items-center gap-1 sm:gap-2">
         <button
           onClick={onSearchClick}
-          className="flex items-center gap-1.5 rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="flex items-center gap-1.5 rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           aria-label="Search"
         >
           <Search size={18} />
@@ -56,7 +56,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
         </button>
         <button
           onClick={() => document.dispatchEvent(new CustomEvent("open-shortcuts-help"))}
-          className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           title="Keyboard shortcuts"
         >
           <Keyboard size={18} />
@@ -66,7 +66,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
         {mounted && (
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
             aria-label="Toggle theme"
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}

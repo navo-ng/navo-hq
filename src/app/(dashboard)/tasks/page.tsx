@@ -477,17 +477,17 @@ export default function TasksPage() {
             Track and manage all team tasks
           </p>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Button variant="secondary" onClick={() => printTaskReport(filteredTasks)}>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <Button variant="secondary" onClick={() => printTaskReport(filteredTasks)} className="hidden sm:inline-flex">
             <Printer size={16} />
             Print
           </Button>
-          <Button variant="secondary" onClick={handleExportCSV}>
+          <Button variant="secondary" onClick={handleExportCSV} className="hidden sm:inline-flex">
             <Download size={16} />
             Export CSV
           </Button>
           {!isViewer && (
-            <Button variant="secondary" onClick={() => setImportOpen(true)}>
+            <Button variant="secondary" onClick={() => setImportOpen(true)} className="hidden sm:inline-flex">
               <Upload size={16} />
               Import CSV
             </Button>
@@ -520,19 +520,19 @@ export default function TasksPage() {
           </div>
           {!isViewer && (
             <>
-              <Button variant="secondary" onClick={() => setMeetingNotesOpen(true)}>
+              <Button variant="secondary" onClick={() => setMeetingNotesOpen(true)} className="hidden sm:inline-flex">
                 <FileText size={16} />
                 Meeting Notes
               </Button>
-              <Button variant="secondary" onClick={() => setBreakdownOpen(true)}>
+              <Button variant="secondary" onClick={() => setBreakdownOpen(true)} className="hidden sm:inline-flex">
                 <Sparkles size={16} />
                 Break Down
               </Button>
-              <Button variant="secondary" onClick={() => setScoreMatrixOpen(true)}>
+              <Button variant="secondary" onClick={() => setScoreMatrixOpen(true)} className="hidden sm:inline-flex">
                 <Target size={16} />
                 Score Matrix
               </Button>
-              <Button variant="secondary" onClick={() => setTemplateDialogOpen(true)}>
+              <Button variant="secondary" onClick={() => setTemplateDialogOpen(true)} className="hidden sm:inline-flex">
                 <Copy size={16} />
                 Templates
               </Button>
@@ -691,6 +691,7 @@ export default function TasksPage() {
                           onChange={() => toggleTaskSelection(task.id)}
                           onClick={(e) => e.stopPropagation()}
                           className="h-4 w-4 shrink-0 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                          aria-label={`Select task ${task.title}`}
                         />
                         <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
                           <GripVertical size={16} />

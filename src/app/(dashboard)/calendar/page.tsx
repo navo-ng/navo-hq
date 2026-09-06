@@ -127,28 +127,23 @@ export default function CalendarPage() {
     setExternalEvents(allExternal);
   }, [userId, supabase, year, month]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setIsLoading(true);
-      try {
-        const data = await fetchEventsForMonth(supabase, year, month);
-        if (!cancelled) {
-          setEvents(data);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("Failed to load events:", err);
-        if (!cancelled) setError("Failed to load events. Please try again.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+  const loadEvents = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchEventsForMonth(supabase, year, month);
+      setEvents(data);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load events:", err);
+      setError("Failed to load events. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
   }, [supabase, year, month]);
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
 
   useEffect(() => {
     if (!isLoading && userId) {
@@ -290,15 +285,15 @@ export default function CalendarPage() {
             New Event
           </Button>
         )}
-        <Button onClick={handleExportICS} variant="secondary" className="shrink-0">
+        <Button onClick={handleExportICS} variant="secondary" className="shrink-0 hidden sm:inline-flex">
           <Download size={16} />
           Export .ics
         </Button>
-        <Button onClick={handleSubscribe} variant="secondary" className="shrink-0">
+        <Button onClick={handleSubscribe} variant="secondary" className="shrink-0 hidden sm:inline-flex">
           <Link size={16} />
           Subscribe
         </Button>
-        <Button onClick={() => setExternalCalOpen(true)} variant="secondary" className="shrink-0">
+        <Button onClick={() => setExternalCalOpen(true)} variant="secondary" className="shrink-0 hidden sm:inline-flex">
           <Calendar size={16} />
           Add Calendar
         </Button>
@@ -334,7 +329,7 @@ export default function CalendarPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={prevMonth}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label="Previous month"
               >
                 <ChevronLeft size={18} />
@@ -344,7 +339,7 @@ export default function CalendarPage() {
               </h2>
               <button
                 onClick={nextMonth}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label="Next month"
               >
                 <ChevronRight size={18} />
@@ -361,7 +356,7 @@ export default function CalendarPage() {
           {error ? (
             <div className="text-center py-12">
               <p className="text-red-500 dark:text-red-400">{error}</p>
-              <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
+              <button onClick={loadEvents} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">

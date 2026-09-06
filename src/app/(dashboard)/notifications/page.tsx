@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, CheckCircle, FileText, AlertTriangle, CheckCheck, Inbox, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/data/notifications";
 import { formatRelativeTime } from "@/lib/utils/relative-time";
 import { useToast } from "@/lib/hooks/useToast";
+import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
 
 const PAGE_SIZE = 50;
 
@@ -54,39 +55,30 @@ export default function NotificationsPage() {
   const supabase = createClient();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [filter, setFilter] = useState<FilterTab>("all");
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setIsLoading(true);
-      setNotifications([]);
-      setHasMore(true);
-      setTotalCount(0);
-      const uid = (await supabase.auth.getUser()).data.user?.id;
-      if (!uid || cancelled) {
-        setIsLoading(false);
-        return;
-      }
-      const [data, count] = await Promise.all([
-        fetchNotifications(supabase, uid, { unreadOnly: filter === "unread", limit: PAGE_SIZE, offset: 0 }),
-        fetchUnreadCount(supabase, uid),
-      ]);
-      if (!cancelled) {
-        setNotifications(data);
-        setUnreadCount(count);
-        setTotalCount(data.length);
-        setHasMore(data.length >= PAGE_SIZE);
-        setIsLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, [supabase, filter]);
+  const { isLoading } = useDataFetcher(async (signal) => {
+    const uid = (await supabase.auth.getUser()).data.user?.id;
+    if (!uid) return [];
+    setNotifications([]);
+    setHasMore(true);
+    setTotalCount(0);
+    const [data, count] = await Promise.all([
+      fetchNotifications(supabase, uid, { unreadOnly: filter === "unread", limit: PAGE_SIZE, offset: 0 }),
+      fetchUnreadCount(supabase, uid),
+    ]);
+    setNotifications(data);
+    setUnreadCount(count);
+    setTotalCount(data.length);
+    setHasMore(data.length >= PAGE_SIZE);
+    return data;
+  }, {
+    deps: [filter],
+    errorMessage: "Failed to load notifications",
+  });
 
   const handleLoadMore = async () => {
     try {

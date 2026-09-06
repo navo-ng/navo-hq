@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Settings as SettingsIcon, Tag, Users, User, Bell, LayoutList, FileText, Webhook, Shield, CircleDot, Download } from "lucide-react";
@@ -17,6 +17,7 @@ import {
   updateUserSetting,
 } from "@/lib/data/settings";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
 import { ShieldAlert } from "lucide-react";
 
 export default function SettingsPage() {
@@ -25,8 +26,6 @@ export default function SettingsPage() {
   const { role, loading: userLoading } = useCurrentUser();
   const [teamSettings, setTeamSettings] = useState<TeamSetting[]>([]);
   const [userSettings, setUserSettings] = useState<UserSetting[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [timezone, setTimezone] = useState("");
@@ -35,59 +34,47 @@ export default function SettingsPage() {
   const [accentColor, setAccentColor] = useState("blue");
 
   const supabase = createClient();
+  const { userId } = useCurrentUser();
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData.user?.id;
+  const { isLoading, error: loadError } = useDataFetcher(async (signal) => {
+    const [teamData, userData2] = await Promise.all([
+      fetchTeamSettings(supabase),
+      userId ? fetchUserSettings(supabase, userId) : Promise.resolve([]),
+    ]);
 
-        const [teamData, userData2] = await Promise.all([
-          fetchTeamSettings(supabase),
-          userId ? fetchUserSettings(supabase, userId) : Promise.resolve([]),
-        ]);
+    setTeamSettings(teamData);
+    setUserSettings(userData2);
 
-        if (!cancelled) {
-          setTeamSettings(teamData);
-          setUserSettings(userData2);
+    const companySetting = teamData.find((s) => s.key === "company_name");
+    if (companySetting) setCompanyName(String(companySetting.value));
 
-          const companySetting = teamData.find((s) => s.key === "company_name");
-          if (companySetting) setCompanyName(String(companySetting.value));
+    const tzSetting = teamData.find((s) => s.key === "timezone");
+    if (tzSetting) setTimezone(String(tzSetting.value));
 
-          const tzSetting = teamData.find((s) => s.key === "timezone");
-          if (tzSetting) setTimezone(String(tzSetting.value));
-
-          const themeSetting = userData2.find((s) => s.key === "theme");
-          if (themeSetting) {
-            const t = String(themeSetting.value);
-            setTheme(t);
-            setGlobalTheme(t);
-          }
-
-          const notifSetting = userData2.find((s) => s.key === "notifications_enabled");
-          if (notifSetting) setNotificationsEnabled(Boolean(notifSetting.value));
-
-          const accentSetting = userData2.find((s) => s.key === "accent_color");
-          if (accentSetting) {
-            const c = String(accentSetting.value).replace(/"/g, "");
-            setAccentColor(c);
-            document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, "").trim();
-            if (c !== "blue") document.documentElement.classList.add(`theme-${c}`);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load settings:", err);
-        if (!cancelled) setLoadError("Failed to load settings");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+    const themeSetting = userData2.find((s) => s.key === "theme");
+    if (themeSetting) {
+      const t = String(themeSetting.value);
+      setTheme(t);
+      setGlobalTheme(t);
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase, setGlobalTheme]);
+
+    const notifSetting = userData2.find((s) => s.key === "notifications_enabled");
+    if (notifSetting) setNotificationsEnabled(Boolean(notifSetting.value));
+
+    const accentSetting = userData2.find((s) => s.key === "accent_color");
+    if (accentSetting) {
+      const c = String(accentSetting.value).replace(/"/g, "");
+      setAccentColor(c);
+      document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, "").trim();
+      if (c !== "blue") document.documentElement.classList.add(`theme-${c}`);
+    }
+
+    return { teamData, userData2 };
+  }, {
+    deps: [userId],
+    enabled: !!userId,
+    errorMessage: "Failed to load settings",
+  });
 
   const handleSaveTeamSettings = async () => {
     setSaving(true);
@@ -193,7 +180,7 @@ export default function SettingsPage() {
   if (loadError) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-500 dark:text-red-400">{loadError}</p>
+        <p className="text-red-500 dark:text-red-400">{loadError.message}</p>
         <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );

@@ -37,7 +37,7 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               aria-label={item.label}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-medium transition-colors ${
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 min-h-[44px] text-xs font-medium transition-colors ${
                 isActive
                   ? "text-navo-blue"
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"

@@ -2,19 +2,20 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
+
+const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" /> });
+const Bar = dynamic(() => import("recharts").then((m) => m.Bar), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then((m) => m.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then((m) => m.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then((m) => m.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then((m) => m.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then((m) => m.ResponsiveContainer), { ssr: false });
+const PieChart = dynamic(() => import("recharts").then((m) => m.PieChart), { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" /> });
+const Pie = dynamic(() => import("recharts").then((m) => m.Pie), { ssr: false });
+const Cell = dynamic(() => import("recharts").then((m) => m.Cell), { ssr: false });
+const Legend = dynamic(() => import("recharts").then((m) => m.Legend), { ssr: false });
 import ReportTabs from "@/components/reports/ReportTabs";
 import {
   Clock,
@@ -73,6 +74,7 @@ export default function TimeReportsPage() {
   const [range, setRange] = useState<FilterRange>("week");
   const [entries, setEntries] = useState<TimeEntryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { theme } = useTheme();
 
   const supabase = createClient();
 
@@ -120,6 +122,9 @@ export default function TimeReportsPage() {
 
     load();
   }, [range, supabase]);
+
+  const chartGridStroke = theme === "dark" ? "#374151" : "#E5E7EB";
+  const tooltipBorderColor = theme === "dark" ? "#374151" : "#E5E7EB";
 
   const totalHours = useMemo(() => entries.reduce((s, e) => s + e.hours, 0), [entries]);
 
@@ -291,11 +296,11 @@ export default function TimeReportsPage() {
           <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Hours per Day (Last 7 Days)</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700" stroke="#E5E7EB" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip
-                contentStyle={{ borderRadius: 8, border: "1px solid var(--tooltip-border, #E5E7EB)" }}
+                contentStyle={{ borderRadius: 8, border: `1px solid ${tooltipBorderColor}` }}
                 formatter={(value: any) => [`${value}h`, "Hours"]}
               />
               <Bar dataKey="hours" fill="#0064F0" radius={[4, 4, 0, 0]} />
@@ -325,7 +330,7 @@ export default function TimeReportsPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ borderRadius: 8, border: "1px solid var(--tooltip-border, #E5E7EB)" }}
+                  contentStyle={{ borderRadius: 8, border: `1px solid ${tooltipBorderColor}` }}
                   formatter={(value: any) => [`${value}h`, "Hours"]}
                 />
                 <Legend />

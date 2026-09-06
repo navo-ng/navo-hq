@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DocumentCard } from "@/components/documents/DocumentCard";
@@ -18,6 +18,7 @@ import {
 import { fetchAllUsers, fetchAllTags } from "@/lib/data/projects";
 import { ErrorState } from "@/components/ui/error-state";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
 import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 
@@ -30,8 +31,6 @@ export default function DocumentsPage() {
   const [users, setUsers] = useState<DocumentUser[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -42,48 +41,34 @@ export default function DocumentsPage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const [docData, statusData, userData, tagData] = await Promise.all([
-          fetchDocuments(supabase, { sort: "newest" }),
-          fetchDocumentStatuses(supabase),
-          fetchAllUsers(supabase),
-          fetchAllTags(supabase),
-        ]);
+  const { isLoading, error, refetch } = useDataFetcher(async (signal) => {
+    const [docData, statusData, userData, tagData] = await Promise.all([
+      fetchDocuments(supabase, { sort: sort as "newest" | "oldest" | "title" | "most_versions" }),
+      fetchDocumentStatuses(supabase),
+      fetchAllUsers(supabase),
+      fetchAllTags(supabase),
+    ]);
 
-        const { data: projectData } = await supabase
-          .from("projects")
-          .select("id, name")
-          .eq("is_archived", false)
-          .order("name");
+    const { data: projectData } = await supabase
+      .from("projects")
+      .select("id, name")
+      .eq("is_archived", false)
+      .order("name");
 
-        if (!cancelled) {
-          setDocuments(docData);
-          setStatuses(statusData);
-          setUsers(userData);
-          setTags(tagData);
-          setProjects(
-            (projectData || []).map((p: { id: string; name: string }) => ({
-              id: p.id,
-              name: p.name,
-            }))
-          );
-          setIsLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setError("Failed to load documents. Please try again.");
-          setIsLoading(false);
-        }
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
+    setDocuments(docData);
+    setStatuses(statusData);
+    setUsers(userData);
+    setTags(tagData);
+    setProjects(
+      (projectData || []).map((p: { id: string; name: string }) => ({
+        id: p.id,
+        name: p.name,
+      }))
+    );
+  }, {
+    deps: [sort],
+    errorMessage: "Failed to load documents. Please try again.",
+  });
 
   const categories = useMemo(() => {
     const seen = new Set<string>();
@@ -148,14 +133,7 @@ export default function DocumentsPage() {
     };
   }, [documents]);
 
-  const refetchDocuments = async () => {
-    try {
-      const data = await fetchDocuments(supabase, { sort: "newest" });
-      setDocuments(data);
-    } catch {
-      showToast({ title: "Failed to refetch documents", type: "error" });
-    }
-  };
+  const refetchDocuments = refetch;
 
   const handleCreateDocument = async (input: {
     title: string;
@@ -225,7 +203,7 @@ export default function DocumentsPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your team&apos;s documents</p>
         </div>
-        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); window.location.reload(); }} />
+        <ErrorState message={error.message} onRetry={refetch} />
       </div>
     );
   }

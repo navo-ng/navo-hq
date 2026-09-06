@@ -190,7 +190,15 @@ export function KanbanBoard({
   );
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div
+      className="flex gap-4 overflow-x-auto pb-4"
+      style={{
+        maskImage:
+          "linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)",
+      }}
+    >
       {statuses.map((status) => {
         const columnTasks = tasksByStatus[status.id] || [];
         const isOver = overStatusId === status.id;
