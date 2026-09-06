@@ -191,12 +191,12 @@ export function KanbanBoard({
 
   return (
     <div
-      className="flex gap-4 overflow-x-auto pb-4"
+      className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
       style={{
         maskImage:
-          "linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)",
+          "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)",
         WebkitMaskImage:
-          "linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)",
+          "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)",
       }}
     >
       {statuses.map((status) => {
@@ -209,7 +209,7 @@ export function KanbanBoard({
             onDragOver={(e) => handleDragOver(e, status.id)}
             onDragLeave={(e) => handleDragLeave(e, status.id)}
             onDrop={(e) => handleDrop(e, status.id)}
-            className={`flex min-w-[280px] flex-1 flex-col rounded-xl bg-gray-50 transition-colors dark:bg-gray-800/50 ${
+            className={`flex min-w-[260px] flex-1 snap-start flex-col rounded-xl bg-gray-50 transition-colors sm:min-w-[280px] dark:bg-gray-800/50 ${
               isOver ? "ring-2 ring-blue-500/50" : ""
             }`}
           >

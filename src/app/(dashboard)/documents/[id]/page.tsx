@@ -106,6 +106,41 @@ export default function DocumentDetailPage() {
     setDocument(docData);
   };
 
+  const handleRetry = async () => {
+    setLoadError(null);
+    setIsLoading(true);
+    try {
+      const [docData, statusData, userData, tagData] = await Promise.all([
+        fetchDocumentById(supabase, documentId),
+        fetchDocumentStatuses(supabase),
+        fetchAllUsers(supabase),
+        fetchAllTags(supabase),
+      ]);
+
+      const { data: projectData } = await supabase
+        .from("projects")
+        .select("id, name")
+        .eq("is_archived", false)
+        .order("name");
+
+      setDocument(docData);
+      setStatuses(statusData);
+      setUsers(userData);
+      setTags(tagData);
+      setProjects(
+        (projectData || []).map((p: { id: string; name: string }) => ({
+          id: p.id,
+          name: p.name,
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to load document:", err);
+      setLoadError("Failed to load document. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -120,7 +155,7 @@ export default function DocumentDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-red-500 dark:text-red-400">{loadError}</p>
-        <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
+        <button onClick={() => handleRetry()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );
   }

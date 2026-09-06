@@ -36,7 +36,7 @@ export default function SettingsPage() {
   const supabase = createClient();
   const { userId } = useCurrentUser();
 
-  const { isLoading, error: loadError } = useDataFetcher(async (signal) => {
+  const { isLoading, error: loadError, refetch } = useDataFetcher(async (signal) => {
     const [teamData, userData2] = await Promise.all([
       fetchTeamSettings(supabase),
       userId ? fetchUserSettings(supabase, userId) : Promise.resolve([]),
@@ -181,7 +181,7 @@ export default function SettingsPage() {
     return (
       <div className="text-center py-12">
         <p className="text-red-500 dark:text-red-400">{loadError.message}</p>
-        <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
+        <button onClick={() => refetch()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );
   }

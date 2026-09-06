@@ -81,6 +81,24 @@ export default function DecisionDetailPage() {
     setVotes(voteData);
   };
 
+  const handleRetry = async () => {
+    setLoadError(null);
+    setIsLoading(true);
+    try {
+      const [decisionData, voteData] = await Promise.all([
+        fetchDecisionById(supabase, decisionId),
+        fetchDecisionVotes(supabase, decisionId),
+      ]);
+      setDecision(decisionData);
+      setVotes(voteData);
+    } catch (err) {
+      console.error("Failed to load decision:", err);
+      setLoadError("Failed to load decision. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -95,7 +113,7 @@ export default function DecisionDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-red-500 dark:text-red-400">{loadError}</p>
-        <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
+        <button onClick={() => handleRetry()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );
   }

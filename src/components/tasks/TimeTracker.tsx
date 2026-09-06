@@ -17,6 +17,7 @@ import { Task } from "@/types/task";
 interface TimeTrackerProps {
   taskId: string;
   task: Task;
+  onUpdate?: () => void;
 }
 
 function formatDuration(totalMinutes: number): string {
@@ -27,7 +28,7 @@ function formatDuration(totalMinutes: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-export function TimeTracker({ taskId, task }: TimeTrackerProps) {
+export function TimeTracker({ taskId, task, onUpdate }: TimeTrackerProps) {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [totalMinutes, setTotalMinutes] = useState(0);
   const [showForm, setShowForm] = useState(false);
@@ -69,11 +70,22 @@ export function TimeTracker({ taskId, task }: TimeTrackerProps) {
   const handleStopTimer = async () => {
     const minutesTracked = Math.max(1, Math.round(elapsed / 60));
     await supabase.from("tasks").update({ active_timer_start: null }).eq("id", taskId);
-    await logTime(supabase, taskId, minutesTracked, "Timer entry");
+    const entry = await logTime(supabase, taskId, minutesTracked, "Timer entry");
     setTimerRunning(false);
     setTimerStart(null);
     setElapsed(0);
-    window.location.reload();
+    if (entry) {
+      setEntries((prev) => [entry, ...prev]);
+      setTotalMinutes((prev) => prev + minutesTracked);
+    } else {
+      const [entriesData, totalData] = await Promise.all([
+        fetchTimeEntriesByTask(supabase, taskId),
+        fetchTotalTimeByTask(supabase, taskId),
+      ]);
+      setEntries(entriesData);
+      setTotalMinutes(totalData);
+    }
+    onUpdate?.();
   };
 
   const formatElapsed = (totalSeconds: number) => {

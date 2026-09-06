@@ -767,7 +767,7 @@ export default function TasksPage() {
       <ImportTasksDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onImported={() => window.location.reload()}
+        onImported={() => refetchTasks()}
       />
 
       <BulkEditDialog

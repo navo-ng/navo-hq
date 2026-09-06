@@ -199,6 +199,47 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
     if (updated) setProject(updated);
   };
 
+  const handleRetry = async () => {
+    setLoadError(null);
+    setIsLoading(true);
+    try {
+      const [projectData, statusData, userData, tagData, taskStatusData, taskPriorityData] =
+        await Promise.all([
+          fetchProjectById(supabase, projectId),
+          fetchProjectStatuses(supabase),
+          fetchAllUsers(supabase),
+          fetchAllTags(supabase),
+          fetchTaskStatuses(supabase),
+          fetchTaskPriorities(supabase),
+        ]);
+      setProject(projectData);
+      setStatuses(statusData);
+      setAllUsers(userData);
+      setTags(tagData);
+      setTaskStatuses(taskStatusData);
+      setTaskPriorities(taskPriorityData);
+
+      if (projectData) {
+        const tasks = await fetchProjectTasks(supabase, projectId);
+        setProjectTasks(tasks);
+
+        const deps = await fetchProjectDependencies(supabase, projectId);
+        setTaskDependencies(deps);
+
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData.user) {
+          const role = await getUserProjectRole(supabase, projectId, authData.user.id);
+          setCurrentUserRole(role);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load project:", err);
+      setLoadError("Failed to load project. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -221,7 +262,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
     return (
       <div className="text-center py-12">
         <p className="text-red-500 dark:text-red-400">{loadError}</p>
-        <button onClick={() => window.location.reload()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
+        <button onClick={() => handleRetry()} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
       </div>
     );
   }
