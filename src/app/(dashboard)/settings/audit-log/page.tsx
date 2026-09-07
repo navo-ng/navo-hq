@@ -6,6 +6,8 @@ import { ChevronDown, ChevronRight, Filter, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { AccessDenied } from "@/components/ui/AccessDenied";
 import {
   fetchAuditLog,
   AuditEntry,
@@ -34,6 +36,9 @@ export default function AuditLogPage() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const supabase = createClient();
+
+  const { role, loading: userLoading } = useCurrentUser();
+  const isAdmin = role === "owner" || role === "admin";
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +91,17 @@ export default function AuditLogPage() {
       minute: "2-digit",
     });
   };
+
+  if (!userLoading && !isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        </div>
+        <AccessDenied message="Team management settings are restricted to owners and admins." requiredRole="admin" backUrl="/settings" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -11,6 +11,7 @@ import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamMember, TeamRole } from "@/types/team";
 import { createClient } from "@/lib/supabase/client";
 import { fetchTeam, fetchRoles } from "@/lib/data/team";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
   owner: "#F59E0B",
@@ -27,6 +28,8 @@ export default function TeamPage() {
   const [roleFilter, setRoleFilter] = useState("all");
 
   const supabase = createClient();
+  const { role } = useCurrentUser();
+  const isAdmin = role === "owner" || role === "admin";
 
   useEffect(() => {
     let cancelled = false;
@@ -95,15 +98,17 @@ export default function TeamPage() {
               Team
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Manage your team members and roles
+              {isAdmin ? "Manage your team members and roles" : "View your team members"}
             </p>
           </div>
+          {isAdmin && (
           <Link href="/team/invite">
             <Button className="shrink-0" disabled>
               <UserPlus size={16} />
               Invite Member
             </Button>
           </Link>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
@@ -133,15 +138,17 @@ export default function TeamPage() {
             Team
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage your team members and roles
+            {isAdmin ? "Manage your team members and roles" : "View your team members"}
           </p>
         </div>
+        {isAdmin && (
         <Link href="/team/invite">
           <Button className="shrink-0">
             <UserPlus size={16} />
             Invite Member
           </Button>
         </Link>
+        )}
       </div>
 
       {members.length === 0 ? (

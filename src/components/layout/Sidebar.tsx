@@ -46,7 +46,7 @@ const navItems: NavItem[] = [
   { href: "/activity", label: "Activity", icon: Activity },
   { href: "/reports/time", label: "Reports", icon: BarChart3 },
   { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 const SidebarContext = createContext<{

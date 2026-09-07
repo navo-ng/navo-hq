@@ -15,6 +15,8 @@ import { Select } from "@/components/ui/select";
 import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { AccessDenied } from "@/components/ui/AccessDenied";
 import {
   fetchTemplates,
   createTemplate,
@@ -45,6 +47,8 @@ export default function TemplatesPage() {
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
   const supabase = createClient();
+  const { role, loading: userLoading } = useCurrentUser();
+  const isAdmin = role === "owner" || role === "admin";
 
   useEffect(() => {
     fetchTemplates(supabase).then((t) => {
@@ -130,6 +134,17 @@ export default function TemplatesPage() {
       { id: newId(), title: "", description: "", priority: "medium" },
     ]);
   };
+
+  if (!userLoading && !isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        </div>
+        <AccessDenied message="Team management settings are restricted to owners and admins." requiredRole="admin" backUrl="/settings" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

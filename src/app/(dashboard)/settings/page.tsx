@@ -18,12 +18,11 @@ import {
 } from "@/lib/data/settings";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
-import { ShieldAlert } from "lucide-react";
 
 export default function SettingsPage() {
   const { theme: activeTheme, setTheme: setGlobalTheme } = useTheme();
   const { showToast } = useToast();
-  const { role, loading: userLoading } = useCurrentUser();
+  const { role } = useCurrentUser();
   const [teamSettings, setTeamSettings] = useState<TeamSetting[]>([]);
   const [userSettings, setUserSettings] = useState<UserSetting[]>([]);
   const [saving, setSaving] = useState(false);
@@ -195,19 +194,44 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Manage your workspace preferences
+          {isAdmin ? "Manage your workspace preferences" : "Manage your personal preferences"}
         </p>
       </div>
 
-      {!userLoading && !isAdmin && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center dark:border-gray-800 dark:bg-gray-900">
-          <ShieldAlert size={48} className="mx-auto mb-4 text-red-400" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Admin Only</h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Team settings and management features are restricted to owners and admins.
-          </p>
-        </div>
-      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Link
+          href="/settings/profile"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20">
+            <User size={20} className="text-navo-blue" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Profile
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Update your name, avatar and password
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/notifications"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/20">
+            <Bell size={20} className="text-amber-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Notification Preferences
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Choose which notifications you receive
+            </p>
+          </div>
+        </Link>
+      </div>
 
       {isAdmin && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -256,22 +280,6 @@ export default function SettingsPage() {
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Add custom fields to tasks and projects
-            </p>
-          </div>
-        </Link>
-        <Link
-          href="/settings/notifications"
-          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/20">
-            <Bell size={20} className="text-amber-500" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Notification Preferences
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Choose which notifications you receive
             </p>
           </div>
         </Link>
@@ -435,6 +443,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {isAdmin && (
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-4 flex items-center gap-2">
           <Download size={18} className="text-gray-400" />
@@ -454,6 +463,7 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+      )}
     </div>
   );
 }

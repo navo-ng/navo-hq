@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { AccessDenied } from "@/components/ui/AccessDenied";
 import {
   fetchWebhooks,
   createWebhook,
@@ -41,6 +43,9 @@ export default function WebhooksPage() {
   const { showToast } = useToast();
 
   const supabase = createClient();
+
+  const { role, loading: userLoading } = useCurrentUser();
+  const isAdmin = role === "owner" || role === "admin";
 
   useEffect(() => {
     let cancelled = false;
@@ -134,6 +139,17 @@ export default function WebhooksPage() {
     showToast({ title: success ? MESSAGES.WEBHOOK_TEST_SENT : "Test webhook failed", type: success ? "success" : "error" });
     setTestingId(null);
   };
+
+  if (!userLoading && !isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        </div>
+        <AccessDenied message="Team management settings are restricted to owners and admins." requiredRole="admin" backUrl="/settings" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

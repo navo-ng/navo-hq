@@ -35,6 +35,7 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const { role: currentUserRole, userId: currentUserId, loading: userLoading } = useCurrentUser();
   const isOwner = currentUserRole === "owner";
+  const isOwnerOrAdmin = currentUserRole === "owner" || currentUserRole === "admin";
   const [member, setMember] = useState<TeamMember | null>(null);
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -146,14 +147,14 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
                 Joined {formatJoinDate(member.created_at)}
               </span>
             </div>
-            {isOwner && member.id !== currentUserId && (
+            {isOwnerOrAdmin && member.id !== currentUserId && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <RoleManager
                   userId={member.id}
                   currentRoleId={member.role_id || ""}
                   currentRoleName={member.role?.name}
                   userName={member.name}
-                  isOwner={isOwner}
+                  isOwner={isOwnerOrAdmin}
                   onRoleChanged={() => {
                     fetchTeam(supabase).then((teamData) => {
                       const updated = teamData.find((m) => m.id === id);
@@ -171,7 +172,7 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
                 </Button>
               </div>
             )}
-            {!isOwner && member.role && (
+            {!isOwnerOrAdmin && member.role && (
               <div className="mt-3">
                 <Badge color="#0064F0">{member.role.name}</Badge>
               </div>
@@ -251,7 +252,7 @@ export default function TeamMemberPage({ params }: { params: Promise<{ id: strin
         )}
       </div>
 
-      {isOwner && member.id !== currentUserId && (
+      {isOwnerOrAdmin && member.id !== currentUserId && (
         <RemoveMemberDialog
           open={removeDialogOpen}
           onClose={() => setRemoveDialogOpen(false)}

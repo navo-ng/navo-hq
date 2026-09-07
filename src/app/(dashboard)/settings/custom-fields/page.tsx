@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Dialog } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { AccessDenied } from "@/components/ui/AccessDenied";
 import {
   CustomFieldDefinition,
   fetchCustomFieldDefinitions,
@@ -29,6 +31,9 @@ export default function CustomFieldsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const supabase = createClient();
+
+  const { role, loading: userLoading } = useCurrentUser();
+  const isAdmin = role === "owner" || role === "admin";
 
   useEffect(() => {
     loadFields();
@@ -97,6 +102,17 @@ export default function CustomFieldsPage() {
 
   const taskFields = fields.filter((f) => f.entity_type === "task");
   const projectFields = fields.filter((f) => f.entity_type === "project");
+
+  if (!userLoading && !isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        </div>
+        <AccessDenied message="Team management settings are restricted to owners and admins." requiredRole="admin" backUrl="/settings" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
