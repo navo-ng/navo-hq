@@ -28,9 +28,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "userId and title required" }, { status: 400 });
     }
 
-    // Fetch subscriptions from Supabase using service role
+    // Fetch subscriptions from Supabase using service role (bypasses RLS:
+    // the anon key can't read push_subscriptions since the policy requires
+    // auth.uid() = user_id, and server-side there's no user session)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: "Service role key not configured" }, { status: 500 });
+    }
 
     const subRes = await fetch(
       `${supabaseUrl}/rest/v1/push_subscriptions?user_id=eq.${userId}&select=endpoint,p256dh,auth`,
