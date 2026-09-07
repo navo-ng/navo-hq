@@ -285,15 +285,15 @@ export default function CalendarPage() {
             New Event
           </Button>
         )}
-        <Button onClick={handleExportICS} variant="secondary" className="shrink-0 hidden sm:inline-flex">
+        <Button onClick={handleExportICS} variant="secondary" className="shrink-0 max-sm:hidden">
           <Download size={16} />
           Export .ics
         </Button>
-        <Button onClick={handleSubscribe} variant="secondary" className="shrink-0 hidden sm:inline-flex">
+        <Button onClick={handleSubscribe} variant="secondary" className="shrink-0 max-sm:hidden">
           <Link size={16} />
           Subscribe
         </Button>
-        <Button onClick={() => setExternalCalOpen(true)} variant="secondary" className="shrink-0 hidden sm:inline-flex">
+        <Button onClick={() => setExternalCalOpen(true)} variant="secondary" className="shrink-0 max-sm:hidden">
           <Calendar size={16} />
           Add Calendar
         </Button>
