@@ -42,7 +42,7 @@ export default function LoginPage() {
         },
       });
       if (error) {
-        setError(MESSAGES.SIGNUP_FAILED);
+        setError(error.message || MESSAGES.SIGNUP_FAILED);
         setLoading(false);
         return;
       }
