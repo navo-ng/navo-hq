@@ -13,6 +13,7 @@ interface KanbanBoardProps {
   onTaskClick: (task: Task) => void;
   onTaskMoved: () => void;
   onCreateTask?: (statusId: string) => void;
+  readOnly?: boolean;
 }
 
 function isOverdue(task: Task): boolean {
@@ -49,10 +50,12 @@ function KanbanCard({
   task,
   onClick,
   onDragStart,
+  readOnly = false,
 }: {
   task: Task;
   onClick: (task: Task) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
+  readOnly?: boolean;
 }) {
   const overdue = isOverdue(task);
   const priorityName = task.priority?.name || "Unknown";
@@ -60,10 +63,10 @@ function KanbanCard({
 
   return (
     <div
-      draggable
-      onDragStart={(e) => onDragStart(e, task.id)}
+      draggable={!readOnly}
+      onDragStart={readOnly ? undefined : (e) => onDragStart(e, task.id)}
       onClick={() => onClick(task)}
-      className="group cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700"
+      className={`group cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700`}
     >
       <div className="mb-2 flex items-center gap-2">
         <Badge color={priorityColor}>{priorityName}</Badge>
@@ -119,6 +122,7 @@ export function KanbanBoard({
   onTaskClick,
   onTaskMoved,
   onCreateTask,
+  readOnly = false,
 }: KanbanBoardProps) {
   const [overStatusId, setOverStatusId] = useState<string | null>(null);
   const dragNodeRef = useRef<HTMLDivElement | null>(null);
@@ -206,9 +210,9 @@ export function KanbanBoard({
         return (
           <div
             key={status.id}
-            onDragOver={(e) => handleDragOver(e, status.id)}
-            onDragLeave={(e) => handleDragLeave(e, status.id)}
-            onDrop={(e) => handleDrop(e, status.id)}
+            onDragOver={readOnly ? undefined : (e) => handleDragOver(e, status.id)}
+            onDragLeave={readOnly ? undefined : (e) => handleDragLeave(e, status.id)}
+            onDrop={readOnly ? undefined : (e) => handleDrop(e, status.id)}
             className={`flex min-w-[260px] flex-1 snap-start flex-col rounded-xl bg-gray-50 transition-colors sm:min-w-[280px] dark:bg-gray-800/50 ${
               isOver ? "ring-2 ring-blue-500/50" : ""
             }`}
@@ -249,6 +253,7 @@ export function KanbanBoard({
                     task={task}
                     onClick={onTaskClick}
                     onDragStart={handleDragStart}
+                    readOnly={readOnly}
                   />
                 ))
               )}

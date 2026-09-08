@@ -398,6 +398,7 @@ export function TaskDetailDrawer({
           </div>
         )}
 
+        {!isViewer && (
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             <ListChecks size={14} />
@@ -405,7 +406,9 @@ export function TaskDetailDrawer({
           </div>
           <ChecklistSection taskId={localTask.id} />
         </div>
+        )}
 
+        {!isViewer && (
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             <Link2 size={14} />
@@ -413,6 +416,7 @@ export function TaskDetailDrawer({
           </div>
           <TaskLinksSection taskId={localTask.id} />
         </div>
+        )}
 
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -430,6 +434,7 @@ export function TaskDetailDrawer({
           <CommentThread entityType="task" entityId={localTask.id} />
         </div>
 
+        {!isViewer && (
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             <Paperclip size={14} />
@@ -437,7 +442,9 @@ export function TaskDetailDrawer({
           </div>
           <AttachmentSection taskId={localTask.id} />
         </div>
+        )}
 
+        {!isViewer && (
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             <ShieldAlert size={14} />
@@ -445,7 +452,9 @@ export function TaskDetailDrawer({
           </div>
           <TaskDependencySection taskId={localTask.id} />
         </div>
+        )}
 
+        {!isViewer && (
         <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             <Clock size={14} />
@@ -453,6 +462,7 @@ export function TaskDetailDrawer({
           </div>
           <TimeTracker taskId={localTask.id} task={localTask} />
         </div>
+        )}
       </div>
 
       {localTask && (

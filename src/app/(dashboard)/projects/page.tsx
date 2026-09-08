@@ -24,6 +24,7 @@ import {
 } from "@/lib/data/projects";
 import { useRealtimeEntity } from "@/lib/hooks/useRealtimeEntity";
 import { useToast } from "@/lib/hooks/useToast";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { MESSAGES } from "@/lib/utils/messages";
 import { ErrorState } from "@/components/ui/error-state";
 
@@ -46,6 +47,8 @@ export default function ProjectsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkStatusId, setBulkStatusId] = useState("");
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const isViewer = role === "viewer";
 
   const supabase = createClient();
 
@@ -305,14 +308,24 @@ export default function ProjectsPage() {
             Track major initiatives and workstreams
           </p>
         </div>
+        {!isViewer && (
         <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
           <Plus size={16} />
           New Project
         </Button>
+        )}
       </div>
 
       {projects.length === 0 ? (
-        <ProjectEmptyState onCreateClick={() => setCreateDialogOpen(true)} />
+        isViewer ? (
+          <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No projects yet.
+            </p>
+          </div>
+        ) : (
+          <ProjectEmptyState onCreateClick={() => setCreateDialogOpen(true)} />
+        )
       ) : (
         <>
           <ProjectStats
@@ -359,11 +372,14 @@ export default function ProjectsPage() {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {searchQuery || statusFilter !== "all" || ownerFilter !== "all"
                   ? "No projects match your filters."
-                  : "No projects yet. Create your first project to get started."}
+                  : isViewer
+                    ? "No projects yet."
+                    : "No projects yet. Create your first project to get started."}
               </p>
             </div>
           ) : (
             <>
+              {!isViewer && (
               <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-800 dark:bg-gray-900">
                 <label className="flex items-center gap-2">
                   <input
@@ -374,6 +390,7 @@ export default function ProjectsPage() {
                     }}
                     onChange={toggleSelectAll}
                     className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                    aria-label="Select all projects"
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
                     {selectedIds.size > 0
@@ -382,10 +399,12 @@ export default function ProjectsPage() {
                   </span>
                 </label>
               </div>
+              )}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredProjects.map((project) => (
                   <div key={project.id} className="relative">
+                    {!isViewer && (
                     <label
                       className="absolute left-2 top-2 z-10"
                       onClick={(e) => e.preventDefault()}
@@ -395,8 +414,10 @@ export default function ProjectsPage() {
                         checked={selectedIds.has(project.id)}
                         onChange={() => toggleSelect(project.id)}
                         className="h-4 w-4 rounded border-gray-300 text-navo-blue focus:ring-navo-blue"
+                        aria-label={`Select project ${project.name}`}
                       />
                     </label>
+                    )}
                     <ProjectCard
                       project={project}
                       onDelete={(p) => {
@@ -412,7 +433,7 @@ export default function ProjectsPage() {
         </>
       )}
 
-      {selectedIds.size > 0 && (
+      {!isViewer && selectedIds.size > 0 && (
         <div className="fixed bottom-20 left-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg dark:border-gray-800 dark:bg-gray-900 sm:bottom-6 sm:w-auto sm:max-w-none">
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">

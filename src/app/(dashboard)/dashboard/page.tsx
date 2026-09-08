@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Settings } from "lucide-react";
+import { Settings, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchTasks, fetchTaskStatuses } from "@/lib/data/tasks";
 import { fetchProjects } from "@/lib/data/projects";
@@ -12,9 +12,11 @@ import { Task, TaskStatusConfig } from "@/types/task";
 import { Project } from "@/types/project";
 import { ActivityWithUser } from "@/types/activity";
 import { DashboardWidgetRenderer } from "@/components/dashboard/DashboardWidget";
+import { StakeholderView } from "@/components/dashboard/StakeholderView";
 import { WidgetCustomizer } from "@/components/dashboard/WidgetCustomizer";
 import { ErrorState } from "@/components/ui/error-state";
 import { fetchAllUsers } from "@/lib/data/users";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 function makeWidget(type: string, position: number): DashboardWidget {
   return {
@@ -38,6 +40,10 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [stakeholderPreview, setStakeholderPreview] = useState(false);
+  const { role } = useCurrentUser();
+  const isViewer = role === "viewer";
+  const showStakeholder = isViewer || stakeholderPreview;
 
   const supabase = createClient();
 
@@ -111,25 +117,49 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Dashboard
+            {showStakeholder ? "Overview" : "Dashboard"}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            One team. One source of truth.
+            {showStakeholder
+              ? "Executive summary — status at a glance."
+              : "One team. One source of truth."}
           </p>
         </div>
-        <button
-          onClick={() => setCustomizerOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-        >
-          <Settings size={16} />
-          Customize
-        </button>
+        <div className="flex items-center gap-2">
+          {!isViewer && (
+            <button
+              onClick={() => setStakeholderPreview((prev) => !prev)}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+              title={stakeholderPreview ? "Back to operational dashboard" : "Preview the viewer (stakeholder) dashboard"}
+            >
+              {stakeholderPreview ? <EyeOff size={16} /> : <Eye size={16} />}
+              {stakeholderPreview ? "Exit stakeholder view" : "View as Stakeholder"}
+            </button>
+          )}
+          {!showStakeholder && (
+            <button
+              onClick={() => setCustomizerOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              <Settings size={16} />
+              Customize
+            </button>
+          )}
+        </div>
       </div>
 
-      {useCustomLayout ? (
+      {showStakeholder ? (
+        <StakeholderView
+          tasks={tasks}
+          statuses={statuses}
+          projects={projects}
+          activities={activities}
+          members={members}
+        />
+      ) : useCustomLayout ? (
         <div className="space-y-6">
           {widgets
             .filter((w) => w.is_visible)
@@ -199,11 +229,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <WidgetCustomizer
-        open={customizerOpen}
-        onClose={() => setCustomizerOpen(false)}
-        onSaved={loadDashboard}
-      />
+      {!showStakeholder && (
+        <WidgetCustomizer
+          open={customizerOpen}
+          onClose={() => setCustomizerOpen(false)}
+          onSaved={loadDashboard}
+        />
+      )}
     </div>
   );
 }

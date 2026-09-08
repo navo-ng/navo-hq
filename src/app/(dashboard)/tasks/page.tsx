@@ -79,10 +79,10 @@ export default function TasksPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    const handler = () => setCreateDialogOpen(true);
+    const handler = () => { if (!isViewer) setCreateDialogOpen(true); };
     document.addEventListener("open-new-task", handler);
     return () => document.removeEventListener("open-new-task", handler);
-  }, []);
+  }, [isViewer]);
 
   const refetchTasks = useCallback(async () => {
     try {
@@ -713,6 +713,7 @@ export default function TasksPage() {
           statuses={statuses}
           onTaskClick={handleTaskClick}
           onTaskMoved={refetchTasks}
+          readOnly={isViewer}
           onCreateTask={isViewer ? undefined : (statusId) => {
             setCreateTaskStatusId(statusId);
             setCreateDialogOpen(true);
