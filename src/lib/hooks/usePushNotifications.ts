@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/lib/hooks/useToast";
 
 interface PushNotificationState {
   permission: NotificationPermission;
   isSupported: boolean;
   isSubscribed: boolean;
-  requestPermission: () => Promise<NotificationPermission>;
+  isWorking: boolean;
+  requestPermission: (silent?: boolean) => Promise<NotificationPermission>;
   unsubscribe: () => Promise<void>;
 }
 
@@ -26,6 +28,8 @@ export function usePushNotifications(): PushNotificationState {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const { showToast } = useToast();
   const supabase = createClient();
 
   useEffect(() => {
@@ -45,19 +49,38 @@ export function usePushNotifications(): PushNotificationState {
     }
   }, []);
 
-  const requestPermission = useCallback(async (): Promise<NotificationPermission> => {
-    if (!isSupported) return "denied";
+  const requestPermission = useCallback(async (silent = false): Promise<NotificationPermission> => {
+    if (!isSupported) {
+      if (!silent) {
+        showToast({ title: "Push notifications aren't supported in this browser", type: "error" });
+      }
+      return "denied";
+    }
 
-    const result = await Notification.requestPermission();
-    setPermission(result);
+    try {
+      setIsWorking(true);
+      const result = await Notification.requestPermission();
+      setPermission(result);
 
-    if (result === "granted") {
+      if (result === "denied") {
+        if (!silent) {
+          showToast({ title: "Notifications are blocked — allow them in your browser's site settings, then try again", type: "error" });
+        }
+        return result;
+      }
+
+      // Dismissed the prompt: stay quiet, we may ask again later
+      if (result !== "granted") return result;
+
       const reg = await navigator.serviceWorker.register("/sw.js");
       await navigator.serviceWorker.ready;
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
         console.error("VAPID public key not configured");
+        if (!silent) {
+          showToast({ title: "Push isn't configured yet — please update the app and try again", type: "error" });
+        }
         return result;
       }
 
@@ -69,46 +92,73 @@ export function usePushNotifications(): PushNotificationState {
       const sub = subscription.toJSON();
       if (sub.endpoint && sub.keys) {
         const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          await supabase.from("push_subscriptions").upsert(
-            {
-              user_id: userData.user.id,
-              endpoint: sub.endpoint,
-              p256dh: sub.keys.p256dh || "",
-              auth: sub.keys.auth || "",
-            },
-            { onConflict: "user_id,endpoint" }
-          );
+        if (!userData.user) {
+          if (!silent) {
+            showToast({ title: "Please sign in again, then enable notifications", type: "error" });
+          }
+          return result;
         }
+        const { error: upsertError } = await supabase.from("push_subscriptions").upsert(
+          {
+            user_id: userData.user.id,
+            endpoint: sub.endpoint,
+            p256dh: sub.keys.p256dh || "",
+            auth: sub.keys.auth || "",
+          },
+          { onConflict: "user_id,endpoint" }
+        );
+        if (upsertError) throw upsertError;
       }
 
       setIsSubscribed(true);
+      if (!silent) {
+        showToast({ title: "Push notifications enabled on this device", type: "success" });
+      }
+      return result;
+    } catch (err) {
+      console.error("Push subscribe failed:", err);
+      if (!silent) {
+        showToast({ title: "Couldn't enable push on this device. Check your connection and try again.", type: "error" });
+      }
+      return typeof Notification !== "undefined" ? Notification.permission : "default";
+    } finally {
+      setIsWorking(false);
     }
-
-    return result;
-  }, [isSupported, supabase]);
+  }, [isSupported, supabase, showToast]);
 
   const unsubscribe = useCallback(async () => {
-    const reg = await navigator.serviceWorker.getRegistration();
-    if (!reg) return;
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        setIsSubscribed(false);
+        return;
+      }
 
-    const sub = await reg.pushManager.getSubscription();
-    if (!sub) return;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        setIsSubscribed(false);
+        return;
+      }
 
-    const endpoint = sub.endpoint;
-    await sub.unsubscribe();
+      const endpoint = sub.endpoint;
+      await sub.unsubscribe();
 
-    const { data: userData } = await supabase.auth.getUser();
-    if (userData.user) {
-      await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", userData.user.id)
-        .eq("endpoint", endpoint);
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user) {
+        await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("user_id", userData.user.id)
+          .eq("endpoint", endpoint);
+      }
+
+      setIsSubscribed(false);
+      showToast({ title: "Push notifications turned off on this device", type: "info" });
+    } catch (err) {
+      console.error("Push unsubscribe failed:", err);
+      showToast({ title: "Couldn't turn off push — please try again", type: "error" });
     }
+  }, [supabase, showToast]);
 
-    setIsSubscribed(false);
-  }, [supabase]);
-
-  return { permission, isSupported, isSubscribed, requestPermission, unsubscribe };
+  return { permission, isSupported, isSubscribed, isWorking, requestPermission, unsubscribe };
 }

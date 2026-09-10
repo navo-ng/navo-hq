@@ -41,7 +41,7 @@ export function PushAutoPrompt() {
         const { data } = await supabase.auth.getUser();
         if (!data.user) return;
         window.localStorage.setItem(PROMPT_KEY, "1");
-        await requestPermission();
+        await requestPermission(true);
       } catch {
         // Never break the app over notifications
       }
@@ -66,7 +66,7 @@ export function PushAutoPrompt() {
           repairAttempted.current = false;
           return;
         }
-        await requestPermission();
+        await requestPermission(true);
       } catch {
         // Never break the app over notifications
       }

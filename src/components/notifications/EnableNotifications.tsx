@@ -1,10 +1,10 @@
 "use client";
 
-import { Bell, CheckCircle, Info, X } from "lucide-react";
+import { Bell, CheckCircle, Info, Loader2 } from "lucide-react";
 import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 
 export function EnableNotifications() {
-  const { permission, isSupported, isSubscribed, requestPermission, unsubscribe } = usePushNotifications();
+  const { permission, isSupported, isSubscribed, isWorking, requestPermission, unsubscribe } = usePushNotifications();
 
   if (!isSupported) return null;
 
@@ -24,11 +24,12 @@ export function EnableNotifications() {
   if (permission === "granted" && !isSubscribed) {
     return (
       <button
-        onClick={requestPermission}
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-navo-blue hover:bg-navo-blue/10 transition-colors"
+        onClick={() => requestPermission()}
+        disabled={isWorking}
+        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-navo-blue hover:bg-navo-blue/10 transition-colors disabled:opacity-50"
       >
-        <Bell size={14} />
-        <span className="hidden sm:inline">Subscribe to push</span>
+        {isWorking ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+        <span className="hidden sm:inline">{isWorking ? "Enabling…" : "Subscribe to push"}</span>
       </button>
     );
   }
@@ -44,11 +45,12 @@ export function EnableNotifications() {
 
   return (
     <button
-      onClick={requestPermission}
-      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-navo-blue hover:bg-navo-blue/10 transition-colors"
+      onClick={() => requestPermission()}
+      disabled={isWorking}
+      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-navo-blue hover:bg-navo-blue/10 transition-colors disabled:opacity-50"
     >
-      <Bell size={14} />
-      <span className="hidden sm:inline">Enable notifications</span>
+      {isWorking ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+      <span className="hidden sm:inline">{isWorking ? "Enabling…" : "Enable notifications"}</span>
     </button>
   );
 }
