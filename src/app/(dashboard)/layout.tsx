@@ -13,6 +13,7 @@ import { OnboardingOverlay } from "@/components/onboarding/OnboardingOverlay";
 import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsHelp } from "@/components/ui/keyboard-shortcuts-help";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { PushAutoPrompt } from "@/components/notifications/PushAutoPrompt";
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -43,6 +44,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       />
       <KeyboardShortcutsHelp open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <BottomNav />
+      <PushAutoPrompt />
     </>
   );
 }
