@@ -18,6 +18,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { data: callerProfile } = await supabase
+    .from("profiles")
+    .select("role_id")
+    .eq("id", userData.user.id)
+    .single();
+
+  if (callerProfile?.role_id) {
+    const { data: callerRole } = await supabase
+      .from("roles")
+      .select("name")
+      .eq("id", callerProfile.role_id)
+      .single();
+    if (callerRole?.name === "viewer") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const { format = "json" } = await req.json();
 
   const [tasksRes, projectsRes, decisionsRes, documentsRes, calendarRes, standupsRes] = await Promise.all([

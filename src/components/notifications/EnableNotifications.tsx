@@ -12,6 +12,7 @@ export function EnableNotifications() {
     return (
       <button
         onClick={unsubscribe}
+        disabled={isWorking}
         className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
         title="Disable notifications"
       >

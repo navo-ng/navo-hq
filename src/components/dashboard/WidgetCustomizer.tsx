@@ -41,7 +41,7 @@ export function WidgetCustomizer({
   useEffect(() => {
     if (!open) return;
 
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
       setUserId(data.user?.id ?? null);
     });
 

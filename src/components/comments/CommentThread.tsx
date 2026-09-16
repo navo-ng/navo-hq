@@ -103,13 +103,13 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
   );
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
       setCurrentUser(data.user?.id ?? null);
     });
   }, [supabase]);
 
   useEffect(() => {
-    fetchComments(supabase, entityType, entityId).then((c) => {
+    fetchComments(supabase, entityType, entityId).then((c: Awaited<ReturnType<typeof fetchComments>>) => {
       setComments(c);
       setLoading(false);
     });
@@ -120,7 +120,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       .from("profiles")
       .select("id, name, avatar_url")
       .order("name")
-      .then(({ data }) => {
+      .then(({ data }: { data: { id: string; name: string; avatar_url: string | null }[] | null }) => {
         if (data) setUsers(data);
       });
   }, [supabase]);
@@ -222,9 +222,26 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
 
   const uploadPendingFiles = async (): Promise<CommentAttachment[]> => {
     if (pendingFiles.length === 0) return [];
+    const MAX_SIZE = 10 * 1024 * 1024;
+    const ALLOWED_EXTS = ["png", "jpg", "jpeg", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip"];
+    const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "text/plain", "text/csv", "application/csv", "application/zip", "application/x-zip-compressed", "multipart/x-zip"]);
+    const sanitizeName = (name: string) => {
+      const base = name.split("/").pop()?.split("\\").pop() || "file";
+      return (base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "file");
+    };
     const uploaded: CommentAttachment[] = [];
     for (const file of pendingFiles) {
-      const filePath = `comment-attachments/${entityType}/${entityId}/${Date.now()}-${file.name}`;
+      if (file.size > MAX_SIZE) {
+        showToast({ title: "File too large. Maximum size is 10MB.", type: "error" });
+        continue;
+      }
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      if (!ALLOWED_EXTS.includes(ext) || (file.type && !ALLOWED_MIME.has(file.type))) {
+        showToast({ title: "File type not allowed. Allowed: png, jpg, jpeg, gif, webp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, zip.", type: "error" });
+        continue;
+      }
+      const safeName = sanitizeName(file.name);
+      const filePath = `comment-attachments/${entityType}/${entityId}/${Date.now()}-${safeName}`;
       const { error: uploadError } = await supabase.storage
         .from("attachments")
         .upload(filePath, file);
@@ -234,7 +251,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       }
       const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(filePath);
       uploaded.push({
-        name: file.name,
+        name: safeName,
         url: urlData.publicUrl,
         size: file.size,
         type: file.type,
@@ -295,7 +312,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
         actorName
       );
 
-      const { data: otherCommenters } = await supabase
+      const { data: otherCommenters }: { data: { user_id: string }[] | null } = await supabase
         .from("comments")
         .select("user_id")
         .eq("entity_type", entityType)
@@ -303,8 +320,8 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
         .neq("user_id", currentUser)
         .order("created_at", { ascending: false });
 
-      const uniqueUserIds = [
-        ...new Set((otherCommenters || []).map((c) => c.user_id)),
+      const uniqueUserIds: string[] = [
+        ...new Set((otherCommenters || []).map((c: { user_id: string }) => c.user_id)),
       ];
 
       for (const uid of uniqueUserIds) {

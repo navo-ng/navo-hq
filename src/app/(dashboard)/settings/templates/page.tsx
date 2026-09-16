@@ -16,6 +16,7 @@ import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { isWorkspaceAdmin } from "@/lib/utils/roles";
 import { AccessDenied } from "@/components/ui/AccessDenied";
 import {
   fetchTemplates,
@@ -48,7 +49,7 @@ export default function TemplatesPage() {
   const { showToast } = useToast();
   const supabase = createClient();
   const { role, loading: userLoading } = useCurrentUser();
-  const isAdmin = role === "owner" || role === "admin";
+  const isAdmin = isWorkspaceAdmin(role);
 
   useEffect(() => {
     fetchTemplates(supabase).then((t) => {

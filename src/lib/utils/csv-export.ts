@@ -17,7 +17,8 @@ export function tasksToCSV(tasks: Record<string, unknown>[]): string {
 
 function escapeCSV(val: string): string {
   if (!val) return '""';
-  const v = val.replace(/"/g, '""');
+  const guarded = /^[=+\-@]/.test(val) ? `'${val}` : val;
+  const v = guarded.replace(/"/g, '""');
   return v.includes(",") || v.includes("\n") || v.includes('"') ? `"${v}"` : v;
 }
 

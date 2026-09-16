@@ -228,3 +228,42 @@ export async function removeDependency(
     userId: userData.user?.id,
   });
 }
+
+export async function fetchDependencyCounts(
+  supabase: SupabaseClient,
+  taskIds: string[]
+): Promise<Record<string, { incoming: number; outgoing: number }>> {
+  const result: Record<string, { incoming: number; outgoing: number }> = {};
+  for (const id of taskIds) {
+    result[id] = { incoming: 0, outgoing: 0 };
+  }
+  if (taskIds.length === 0) return result;
+
+  try {
+    const [blockedByRes, blockingRes] = await Promise.all([
+      supabase
+        .from("task_dependencies")
+        .select("task_id, blocked_by_id")
+        .in("task_id", taskIds),
+      supabase
+        .from("task_dependencies")
+        .select("task_id, blocked_by_id")
+        .in("blocked_by_id", taskIds),
+    ]);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const row of ((blockedByRes.data || []) as any[])) {
+      const id = row.task_id as string;
+      if (result[id]) result[id].incoming += 1;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const row of ((blockingRes.data || []) as any[])) {
+      const id = row.blocked_by_id as string;
+      if (result[id]) result[id].outgoing += 1;
+    }
+  } catch (err) {
+    console.error("Error fetching dependency counts:", err);
+  }
+
+  return result;
+}

@@ -17,6 +17,7 @@ import {
 } from "@/lib/data/documents";
 import { fetchAllUsers, fetchAllTags } from "@/lib/data/projects";
 import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
 import { useToast } from "@/lib/hooks/useToast";
@@ -228,35 +229,50 @@ export default function DocumentsPage() {
       </div>
 
       {documents.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center dark:border-gray-800 dark:bg-gray-900">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
-            <svg
-              className="h-6 w-6 text-navo-blue"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-            No documents yet
-          </h3>
-          {isViewer ? (
-            <p className="mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
-              No documents have been created yet.
-            </p>
-          ) : (
-            <>
-              <p className="mb-6 mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
-                Documents help your team store, share, and track important files.
-                Create your first document to get started.
-              </p>
+        isViewer ? (
+          <EmptyState
+            icon={
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
+                <svg
+                  className="h-6 w-6 text-navo-blue"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+            }
+            title="No documents yet"
+            description="No documents have been created yet."
+          />
+        ) : (
+          <EmptyState
+            icon={
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
+                <svg
+                  className="h-6 w-6 text-navo-blue"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+            }
+            title="No documents yet"
+            description="Documents help your team store, share, and track important files. Create your first document to get started."
+            action={
               <button
                 onClick={() => setCreateDialogOpen(true)}
                 className="inline-flex items-center gap-2 rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep transition-colors"
@@ -264,9 +280,9 @@ export default function DocumentsPage() {
                 <Plus size={16} />
                 Create your first document
               </button>
-            </>
-          )}
-        </div>
+            }
+          />
+        )
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -322,7 +338,7 @@ export default function DocumentsPage() {
           {filteredDocuments.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {searchQuery || statusFilter !== "all" || categoryFilter !== "all"
+                {searchQuery || statusFilter !== "all" || categoryFilter !== "all" || isViewer
                   ? "No documents match your filters."
                   : "No documents yet. Create your first document to get started."}
               </p>

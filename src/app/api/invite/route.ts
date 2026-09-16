@@ -65,6 +65,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+    if (!normalizedEmail) {
+      return NextResponse.json(
+        { error: "Email and role are required" },
+        { status: 400 }
+      );
+    }
+
+    const { data: targetRole } = await supabaseAdmin
+      .from("roles")
+      .select("id, name")
+      .eq("id", role_id)
+      .single();
+
+    if (!targetRole) {
+      return NextResponse.json(
+        { error: "Invalid role" },
+        { status: 400 }
+      );
+    }
+
+    if (targetRole.name === "owner" && callerRole?.name !== "owner") {
+      return NextResponse.json(
+        { error: "Only owners can grant the owner role" },
+        { status: 403 }
+      );
+    }
+
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     const supabase = createClient(
@@ -75,7 +104,7 @@ export async function POST(req: NextRequest) {
     const { data: existingProfile } = await supabase
       .from("profiles")
       .select("id, email")
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .single();
 
     if (existingProfile) {
@@ -94,7 +123,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "Existing member's role updated",
-        email,
+        email: normalizedEmail,
         tempPassword: null,
       });
     }
@@ -103,7 +132,7 @@ export async function POST(req: NextRequest) {
 
     if (supabaseServiceKey) {
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
+        email: normalizedEmail,
         password: tempPassword,
         email_confirm: true,
       });
@@ -126,8 +155,8 @@ export async function POST(req: NextRequest) {
         .from("profiles")
         .insert({
           id: authData.user.id,
-          email,
-          name: email.split("@")[0],
+          email: normalizedEmail,
+          name: normalizedEmail.split("@")[0],
           role_id,
           is_active: true,
         });
@@ -142,14 +171,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "Team member invited successfully",
-        email,
+        email: normalizedEmail,
         tempPassword,
         userId: authData.user.id,
       });
     }
 
     const { data: signupData, error: signupError } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password: tempPassword,
       options: {
         data: { role_id },
@@ -174,8 +203,8 @@ export async function POST(req: NextRequest) {
       .from("profiles")
       .insert({
         id: signupData.user.id,
-        email,
-        name: email.split("@")[0],
+        email: normalizedEmail,
+        name: normalizedEmail.split("@")[0],
         role_id,
         is_active: true,
       });
@@ -187,7 +216,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Team member invited successfully",
-      email,
+      email: normalizedEmail,
       tempPassword,
       userId: signupData.user.id,
     });

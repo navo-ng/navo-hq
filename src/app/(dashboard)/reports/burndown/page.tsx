@@ -15,6 +15,7 @@ import {
 import ReportTabs from "@/components/reports/ReportTabs";
 import { Calendar, ListChecks, Target, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/utils/csv-export";
+import { useTheme } from "next-themes";
 
 interface ProjectOption {
   id: string;
@@ -40,6 +41,7 @@ export default function BurndownPage() {
   const [doneStatusId, setDoneStatusId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isProjectLoading, setIsProjectLoading] = useState(true);
+  const { theme } = useTheme();
 
   const supabase = createClient();
 
@@ -58,7 +60,7 @@ export default function BurndownPage() {
           .single(),
       ]);
 
-      setProjects((projectRes.data || []).map((p) => ({ id: p.id, name: p.name })));
+      setProjects((projectRes.data || []).map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
       setDoneStatusId(statusRes.data?.id || "");
       setIsProjectLoading(false);
     };
@@ -82,7 +84,7 @@ export default function BurndownPage() {
         .eq("is_archived", false);
 
       setTaskData(
-        (data || []).map((row) => ({
+        (data || []).map((row: { id: string; status_id: string; completed_at: string | null; created_at: string }) => ({
           id: row.id,
           status_id: row.status_id,
           completed_at: row.completed_at as string | null,
@@ -183,6 +185,9 @@ export default function BurndownPage() {
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     downloadCSV(csv, "burndown-report.csv");
   };
+
+  const chartGridStroke = theme === "dark" ? "#374151" : "#E5E7EB";
+  const tooltipBorderColor = theme === "dark" ? "#374151" : "#E5E7EB";
 
   if (isProjectLoading) {
     return (
@@ -287,11 +292,11 @@ export default function BurndownPage() {
             <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Burndown Chart</h2>
             <ResponsiveContainer width="100%" height={350}>
               <LineChart data={burndownData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
-                  contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }}
+                  contentStyle={{ borderRadius: 8, border: `1px solid ${tooltipBorderColor}` }}
                 />
                 <Legend />
                 <Line

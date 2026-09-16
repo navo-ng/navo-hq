@@ -8,6 +8,7 @@ import { fetchStandups, fetchMyStandup, createStandup, Standup } from "@/lib/dat
 import { useToast } from "@/lib/hooks/useToast";
 import { MESSAGES } from "@/lib/utils/messages";
 import { renderMarkdown } from "@/lib/utils/markdown";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function StandupPage() {
   const [standups, setStandups] = useState<Standup[]>([]);
@@ -174,9 +175,7 @@ export default function StandupPage() {
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Team Check-ins</h2>
 
         {standups.length === 0 ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
-            <p className="text-sm text-gray-500 dark:text-gray-400">No check-ins today yet.</p>
-          </div>
+          <EmptyState title="No check-ins today yet." />
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {standups.map((standup) => (

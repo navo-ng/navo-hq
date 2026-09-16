@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, Search, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tag } from "@/types/index";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
+import { isWorkspaceAdmin } from "@/lib/utils/roles";
 import { AccessDenied } from "@/components/ui/AccessDenied";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   fetchTags,
   createTag,
@@ -33,7 +36,6 @@ const TAG_COLORS = [
 
 export default function TagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
@@ -46,22 +48,15 @@ export default function TagsPage() {
   const supabase = createClient();
 
   const { role, loading: userLoading } = useCurrentUser();
-  const isAdmin = role === "owner" || role === "admin";
+  const isAdmin = isWorkspaceAdmin(role);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const data = await fetchTags(supabase);
-      if (!cancelled) {
-        setTags(data);
-        setIsLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
+  const { isLoading, error, refetch } = useDataFetcher(async () => {
+    const data = await fetchTags(supabase);
+    setTags(data);
+    return data;
+  }, {
+    errorMessage: "Failed to load tags",
+  });
 
   const filteredTags = useMemo(() => {
     if (!searchQuery) return tags;
@@ -199,6 +194,8 @@ export default function TagsPage() {
             />
           ))}
         </div>
+      ) : error ? (
+        <ErrorState message={error.message} onRetry={refetch} />
       ) : filteredTags.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
           <p className="text-sm text-gray-500 dark:text-gray-400">

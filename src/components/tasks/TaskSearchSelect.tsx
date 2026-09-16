@@ -49,7 +49,7 @@ export function TaskSearchSelect({
             title: row.title as string,
             status: row.status as { name: string; color: string } | null,
           }))
-          .filter((t) => !excludeIds.includes(t.id));
+          .filter((t: { id: string }) => !excludeIds.includes(t.id));
         setResults(filtered);
       }
       setLoading(false);

@@ -25,17 +25,17 @@ export function useRealtimeEntity(
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table, filter: filter || undefined },
-        (payload) => onInsertRef.current?.(payload)
+        (payload: { new: unknown }) => onInsertRef.current?.(payload)
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table, filter: filter || undefined },
-        (payload) => onUpdateRef.current?.(payload)
+        (payload: { new: unknown }) => onUpdateRef.current?.(payload)
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table, filter: filter || undefined },
-        (payload) => onDeleteRef.current?.(payload)
+        (payload: { new: unknown }) => onDeleteRef.current?.(payload)
       )
       .subscribe();
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
@@ -116,6 +116,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const { mobileOpen, setMobileOpen } = useSidebar();
   const { role, userId, fullName } = useCurrentUser();
@@ -211,7 +212,7 @@ export function Sidebar() {
             {!collapsed && (
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{fullName || "User"}</p>
-                <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }} className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400">Sign out</button>
+                <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login"); router.refresh(); }} className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400">Sign out</button>
               </div>
             )}
           </div>
@@ -265,7 +266,7 @@ export function Sidebar() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{fullName || "User"}</p>
-                  <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }} className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400">Sign out</button>
+                  <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login"); router.refresh(); }} className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400">Sign out</button>
                 </div>
               </div>
             </div>

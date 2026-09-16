@@ -64,7 +64,7 @@ export default function CalendarPage() {
   const month = currentDate.getMonth() + 1;
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
       if (data.user) setUserId(data.user.id);
     });
   }, [supabase]);
@@ -260,10 +260,14 @@ export default function CalendarPage() {
 
   const handleSubscribe = async () => {
     if (!userId) return;
-    const baseUrl = window.location.origin;
-    const url = generateCalendarSubscriptionUrl(baseUrl, userId);
-    await navigator.clipboard.writeText(url);
-    showToast({ title: MESSAGES.CALENDAR_URL_COPIED, type: "success" });
+    try {
+      const baseUrl = window.location.origin;
+      const url = generateCalendarSubscriptionUrl(baseUrl, userId);
+      await navigator.clipboard.writeText(url);
+      showToast({ title: MESSAGES.CALENDAR_URL_COPIED, type: "success" });
+    } catch {
+      showToast({ title: "Failed to copy calendar URL. Please try again.", type: "error" });
+    }
   };
 
   const monthName = currentDate.toLocaleString("default", { month: "long" });
@@ -300,7 +304,7 @@ export default function CalendarPage() {
         <div className="flex shrink-0 items-center rounded-lg border border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 transition-colors ${
+            className={`p-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navo-blue ${
               viewMode === "grid"
                 ? "bg-navo-blue text-white"
                 : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -311,7 +315,7 @@ export default function CalendarPage() {
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 transition-colors ${
+            className={`p-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navo-blue ${
               viewMode === "list"
                 ? "bg-navo-blue text-white"
                 : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -329,7 +333,7 @@ export default function CalendarPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={prevMonth}
-                className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navo-blue dark:hover:bg-gray-800"
                 aria-label="Previous month"
               >
                 <ChevronLeft size={18} />
@@ -339,7 +343,7 @@ export default function CalendarPage() {
               </h2>
               <button
                 onClick={nextMonth}
-                className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navo-blue dark:hover:bg-gray-800"
                 aria-label="Next month"
               >
                 <ChevronRight size={18} />
@@ -347,7 +351,7 @@ export default function CalendarPage() {
             </div>
             <button
               onClick={goToToday}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navo-blue dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
             >
               Today
             </button>
@@ -356,7 +360,7 @@ export default function CalendarPage() {
           {error ? (
             <div className="text-center py-12">
               <p className="text-red-500 dark:text-red-400">{error}</p>
-              <button onClick={loadEvents} className="mt-4 text-sm text-navo-blue hover:underline">Retry</button>
+              <button onClick={loadEvents} className="mt-4 text-sm text-navo-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navo-blue">Retry</button>
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">
@@ -371,6 +375,14 @@ export default function CalendarPage() {
               {allEvents.length === 0 && (
                 <div className="col-span-7 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
                   No events this month
+                  {!isViewer && (
+                    <div className="mt-4">
+                      <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                        <Plus size={14} />
+                        New Event
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
               {calendarDays.map((day, idx) => {
@@ -386,7 +398,7 @@ export default function CalendarPage() {
                   <button
                     key={dateKey}
                     onClick={() => setSelectedDate(dateKey)}
-                    className={`relative min-h-[48px] sm:min-h-[72px] bg-white p-1 text-left transition-colors dark:bg-gray-900 ${
+                    className={`relative min-h-[48px] sm:min-h-[72px] bg-white p-1 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-navo-blue dark:bg-gray-900 ${
                       isSelected
                         ? "bg-navo-blue/5 ring-1 ring-navo-blue"
                         : "hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -438,9 +450,17 @@ export default function CalendarPage() {
           ) : (
             <div className="space-y-4">
               {allEvents.length === 0 ? (
-                <p className="py-12 text-center text-sm text-gray-400">
-                  No events this month
-                </p>
+                <div className="py-12 text-center">
+                  <p className="text-sm text-gray-400">
+                    No events this month
+                  </p>
+                  {!isViewer && (
+                    <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="mt-4">
+                      <Plus size={14} />
+                      New Event
+                    </Button>
+                  )}
+                </div>
               ) : (
                 Object.keys(eventsByDate)
                   .sort()
@@ -492,9 +512,17 @@ export default function CalendarPage() {
             </div>
           ) : selectedDate ? (
             selectedDateEvents.length === 0 ? (
-              <p className="py-8 text-center text-sm text-gray-400">
-                No events on this day
-              </p>
+              <div className="py-8 text-center">
+                <p className="text-sm text-gray-400">
+                  No events on this day
+                </p>
+                {!isViewer && (
+                  <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="mt-4">
+                    <Plus size={14} />
+                    New Event
+                  </Button>
+                )}
+              </div>
             ) : (
               <div className="space-y-2">
                 {selectedDateEvents.map((event) => (
@@ -510,9 +538,17 @@ export default function CalendarPage() {
           ) : (
             <div className="space-y-2">
               {allEvents.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-400">
-                  No upcoming events
-                </p>
+                <div className="py-8 text-center">
+                  <p className="text-sm text-gray-400">
+                    No upcoming events
+                  </p>
+                  {!isViewer && (
+                    <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="mt-4">
+                      <Plus size={14} />
+                      New Event
+                    </Button>
+                  )}
+                </div>
               ) : (
                 allEvents.slice(0, 5).map((event) => (
                   <CalendarEventCard

@@ -71,6 +71,7 @@ export function TaskDetailDrawer({
   const supabase = createClient();
   const [ownerOverride, setOwnerOverride] = useState<string | null>(null);
   const [snoozeOpen, setSnoozeOpen] = useState(false);
+  const [isSnoozing, setIsSnoozing] = useState(false);
   const [snoozedUntil, setSnoozedUntil] = useState<string | null>(task?.snoozed_until ?? null);
   const localTask = task ? { ...task, owner_id: ownerOverride ?? task.owner_id, snoozed_until: snoozedUntil } : null;
 
@@ -162,24 +163,40 @@ export function TaskDetailDrawer({
   };
 
   const handleSnooze = async (days: number | null) => {
-    const date = days === null
-      ? null
-      : new Date(Date.now() + days * 86400000).toISOString().split("T")[0];
-    await updateTask(supabase, localTask.id, { snoozed_until: date });
-    setSnoozedUntil(date);
-    setSnoozeOpen(false);
-    if (date) {
-      showToast({ title: MESSAGES.TASK_SNOOZED.replace("{date}", formatDate(date)), type: "success" });
-    } else {
-      showToast({ title: MESSAGES.TASK_UNSNOOZED, type: "success" });
+    if (isSnoozing) return;
+    setIsSnoozing(true);
+    try {
+      const date = days === null
+        ? null
+        : new Date(Date.now() + days * 86400000).toISOString().split("T")[0];
+      await updateTask(supabase, localTask.id, { snoozed_until: date });
+      setSnoozedUntil(date);
+      setSnoozeOpen(false);
+      if (date) {
+        showToast({ title: MESSAGES.TASK_SNOOZED.replace("{date}", formatDate(date)), type: "success" });
+      } else {
+        showToast({ title: MESSAGES.TASK_UNSNOOZED, type: "success" });
+      }
+    } catch {
+      showToast({ title: MESSAGES.NETWORK_ERROR, type: "error" });
+    } finally {
+      setIsSnoozing(false);
     }
   };
 
   const handleSnoozeCustom = async (dateStr: string) => {
-    await updateTask(supabase, localTask.id, { snoozed_until: dateStr });
-    setSnoozedUntil(dateStr);
-    setSnoozeOpen(false);
-    showToast({ title: MESSAGES.TASK_SNOOZED.replace("{date}", formatDate(dateStr)), type: "success" });
+    if (isSnoozing) return;
+    setIsSnoozing(true);
+    try {
+      await updateTask(supabase, localTask.id, { snoozed_until: dateStr });
+      setSnoozedUntil(dateStr);
+      setSnoozeOpen(false);
+      showToast({ title: MESSAGES.TASK_SNOOZED.replace("{date}", formatDate(dateStr)), type: "success" });
+    } catch {
+      showToast({ title: MESSAGES.NETWORK_ERROR, type: "error" });
+    } finally {
+      setIsSnoozing(false);
+    }
   };
 
   return (
@@ -237,7 +254,8 @@ export function TaskDetailDrawer({
             </div>
             <button
               onClick={() => handleSnooze(null)}
-              className="text-xs font-medium text-yellow-600 hover:text-yellow-800 dark:text-yellow-400"
+              disabled={isSnoozing}
+              className="text-xs font-medium text-yellow-600 hover:text-yellow-800 disabled:opacity-50 dark:text-yellow-400"
             >
               Clear
             </button>
@@ -250,6 +268,8 @@ export function TaskDetailDrawer({
               variant="ghost"
               size="sm"
               onClick={() => setSnoozeOpen(!snoozeOpen)}
+              aria-expanded={snoozeOpen}
+              aria-haspopup="menu"
               className="text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
             >
               <Moon size={14} className="mr-1" />
@@ -259,13 +279,15 @@ export function TaskDetailDrawer({
               <div className="absolute left-0 z-10 mt-1 w-56 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
                 <button
                   onClick={() => handleSnooze(1)}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                  disabled={isSnoozing}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50 dark:hover:bg-gray-800"
                 >
                   Tomorrow
                 </button>
                 <button
                   onClick={() => handleSnooze(7)}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                  disabled={isSnoozing}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50 dark:hover:bg-gray-800"
                 >
                   Next week
                 </button>
@@ -283,7 +305,8 @@ export function TaskDetailDrawer({
                   <div className="border-t border-gray-100 dark:border-gray-800">
                     <button
                       onClick={() => handleSnooze(null)}
-                      className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                      disabled={isSnoozing}
+                      className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
                     >
                       Clear snooze
                     </button>

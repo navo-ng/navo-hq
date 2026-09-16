@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import webPush from "web-push";
+import { createClient } from "@/lib/supabase/server";
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY!;
@@ -17,6 +18,13 @@ interface PushPayload {
 }
 
 export async function POST(req: NextRequest) {
+  // Require a logged-in session (sole caller sends cookies; blocks anonymous spam)
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   if (!vapidPublicKey || !vapidPrivateKey) {
     return NextResponse.json({ error: "VAPID keys not configured" }, { status: 500 });
   }

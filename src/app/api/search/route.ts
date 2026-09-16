@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
+  const serverSupabase = await createServerClient();
+  const {
+    data: { user },
+  } = await serverSupabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { query, limit = 20 } = await req.json();
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
 
   if (!query || query.trim().length < 2) {
     return NextResponse.json({ results: [] });
@@ -22,7 +32,7 @@ export async function POST(req: NextRequest) {
     .select("id, title, description")
     .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
     .eq("is_archived", false)
-    .limit(limit);
+    .limit(safeLimit);
 
   if (tasks) {
     for (const t of tasks) {
@@ -42,7 +52,7 @@ export async function POST(req: NextRequest) {
     .select("id, name, description")
     .or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
     .eq("is_archived", false)
-    .limit(limit);
+    .limit(safeLimit);
 
   if (projects) {
     for (const p of projects) {
@@ -62,7 +72,7 @@ export async function POST(req: NextRequest) {
     .select("id, title, proposed_decision")
     .or(`title.ilike.${searchTerm},proposed_decision.ilike.${searchTerm}`)
     .eq("is_archived", false)
-    .limit(limit);
+    .limit(safeLimit);
 
   if (decisions) {
     for (const d of decisions) {
@@ -82,7 +92,7 @@ export async function POST(req: NextRequest) {
     .select("id, title, description")
     .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
     .eq("is_archived", false)
-    .limit(limit);
+    .limit(safeLimit);
 
   if (documents) {
     for (const d of documents) {
@@ -99,9 +109,9 @@ export async function POST(req: NextRequest) {
   // Search team members
   const { data: members } = await supabase
     .from("profiles")
-    .select("id, name, email")
+    .select("id, name")
     .ilike("name", searchTerm)
-    .limit(limit);
+    .limit(safeLimit);
 
   if (members) {
     for (const m of members) {
@@ -109,11 +119,11 @@ export async function POST(req: NextRequest) {
         type: "team",
         id: m.id,
         title: m.name,
-        subtitle: m.email || "Team member",
+        subtitle: "Team member",
         url: `/team/${m.id}`,
       });
     }
   }
 
-  return NextResponse.json({ results: results.slice(0, limit) });
+  return NextResponse.json({ results: results.slice(0, safeLimit) });
 }

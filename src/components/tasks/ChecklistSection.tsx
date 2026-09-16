@@ -29,23 +29,38 @@ export function ChecklistSection({ taskId }: ChecklistSectionProps) {
   const handleAdd = async () => {
     if (!newTitle.trim() || loading) return;
     setLoading(true);
-    const item = await addChecklistItem(supabase, taskId, newTitle.trim());
-    if (item) {
-      setItems([...items, item]);
-      setNewTitle("");
-      showToast({ title: MESSAGES.CHECKLIST_ITEM_ADDED, type: "success" });
+    try {
+      const item = await addChecklistItem(supabase, taskId, newTitle.trim());
+      if (item) {
+        setItems([...items, item]);
+        setNewTitle("");
+        showToast({ title: MESSAGES.CHECKLIST_ITEM_ADDED, type: "success" });
+      } else {
+        showToast({ title: "Failed to add subtask. Please try again.", type: "error" });
+      }
+    } catch {
+      showToast({ title: "Failed to add subtask. Please try again.", type: "error" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleToggle = async (item: ChecklistItem) => {
-    await toggleChecklistItem(supabase, item.id, !item.is_completed);
-    setItems(items.map((i) => (i.id === item.id ? { ...i, is_completed: !i.is_completed } : i)));
+    try {
+      await toggleChecklistItem(supabase, item.id, !item.is_completed);
+      setItems(items.map((i) => (i.id === item.id ? { ...i, is_completed: !i.is_completed } : i)));
+    } catch {
+      showToast({ title: "Failed to update subtask. Please try again.", type: "error" });
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteChecklistItem(supabase, id);
-    setItems(items.filter((i) => i.id !== id));
+    try {
+      await deleteChecklistItem(supabase, id);
+      setItems(items.filter((i) => i.id !== id));
+    } catch {
+      showToast({ title: "Failed to delete subtask. Please try again.", type: "error" });
+    }
   };
 
   return (
@@ -69,16 +84,18 @@ export function ChecklistSection({ taskId }: ChecklistSectionProps) {
           key={item.id}
           className="group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
-          <button
-            onClick={() => handleToggle(item)}
-            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-              item.is_completed
-                ? "border-navo-blue bg-navo-blue text-white"
-                : "border-gray-300 hover:border-navo-blue dark:border-gray-600"
-            }`}
-          >
-            {item.is_completed && <Check size={12} />}
-          </button>
+          <div className="flex min-h-[44px] items-center">
+            <button
+              onClick={() => handleToggle(item)}
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+                item.is_completed
+                  ? "border-navo-blue bg-navo-blue text-white"
+                  : "border-gray-300 hover:border-navo-blue dark:border-gray-600"
+              }`}
+            >
+              {item.is_completed && <Check size={12} />}
+            </button>
+          </div>
           <span
             className={`flex-1 text-sm ${
               item.is_completed
@@ -90,7 +107,7 @@ export function ChecklistSection({ taskId }: ChecklistSectionProps) {
           </span>
           <button
             onClick={() => handleDelete(item.id)}
-            className="shrink-0 text-gray-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+            className="shrink-0 text-gray-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 max-sm:opacity-100"
           >
             <X size={14} />
           </button>
@@ -105,6 +122,7 @@ export function ChecklistSection({ taskId }: ChecklistSectionProps) {
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder="Add subtask..."
+          aria-label="Add subtask"
           className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none dark:text-white"
         />
       </div>

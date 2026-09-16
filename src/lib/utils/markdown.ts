@@ -14,7 +14,6 @@ const MARKDOWN_SANITIZER_CONFIG: DOMPurifyConfig = {
     "src", "alt", "width", "height",
     "class",
   ],
-  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^:]|$))/i,
   ADD_ATTR: ["target"],
   FORBID_TAGS: ["script", "style", "iframe", "form", "object", "embed"],
   FORBID_ATTR: ["onerror", "onload", "onclick"],

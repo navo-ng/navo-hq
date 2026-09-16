@@ -1,10 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
+  const serverSupabase = await createServerClient();
+  const {
+    data: { user },
+  } = await serverSupabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const userId = req.nextUrl.searchParams.get("user");
   if (!userId) {
     return NextResponse.json({ error: "user parameter required" }, { status: 400 });
+  }
+
+  if (userId !== user.id) {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: callerProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role_id")
+      .eq("id", user.id)
+      .single();
+
+    let callerRoleName: string | null = null;
+    if (callerProfile?.role_id) {
+      const { data: callerRole } = await supabaseAdmin
+        .from("roles")
+        .select("name")
+        .eq("id", callerProfile.role_id)
+        .single();
+      callerRoleName = callerRole?.name ?? null;
+    }
+
+    if (callerRoleName !== "owner" && callerRoleName !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const supabase = createClient(

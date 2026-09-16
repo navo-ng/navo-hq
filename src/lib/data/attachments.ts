@@ -12,6 +12,71 @@ export interface TaskAttachment {
   user?: { id: string; name: string; avatar_url: string | null };
 }
 
+export const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10MB
+
+export const ALLOWED_ATTACHMENT_EXTENSIONS = [
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+  "txt",
+  "csv",
+  "zip",
+] as const;
+
+export const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "text/csv",
+  "application/csv",
+  "application/zip",
+  "application/x-zip-compressed",
+  "multipart/x-zip",
+]);
+
+export function sanitizeAttachmentFilename(name: string): string {
+  const base = name.split("/").pop()?.split("\\").pop() || "file";
+  const sanitized = base.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return sanitized.slice(0, 120) || "file";
+}
+
+export function validateAttachmentFile(file: File): void {
+  if (file.size > MAX_ATTACHMENT_SIZE) {
+    throw new Error("File too large. Maximum size is 10MB.");
+  }
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  if (
+    !(ALLOWED_ATTACHMENT_EXTENSIONS as readonly string[]).includes(ext)
+  ) {
+    throw new Error(
+      "File type not allowed. Allowed: png, jpg, jpeg, gif, webp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, zip."
+    );
+  }
+  if (file.type && !ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type)) {
+    throw new Error(
+      "File type not allowed. Allowed: png, jpg, jpeg, gif, webp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, zip."
+    );
+  }
+}
+
 export async function fetchAttachments(supabase: SupabaseClient, taskId: string): Promise<TaskAttachment[]> {
   const { data, error } = await supabase
     .from("task_attachments")
@@ -42,7 +107,9 @@ export async function uploadAttachment(
   const userId = userData.user?.id;
   if (!userId) return null;
 
-  const filePath = `task-attachments/${taskId}/${Date.now()}-${file.name}`;
+  validateAttachmentFile(file);
+  const safeName = sanitizeAttachmentFilename(file.name);
+  const filePath = `task-attachments/${taskId}/${Date.now()}-${safeName}`;
   const { error: uploadError } = await supabase.storage
     .from("attachments")
     .upload(filePath, file);
@@ -59,7 +126,7 @@ export async function uploadAttachment(
     .insert({
       task_id: taskId,
       user_id: userId,
-      file_name: file.name,
+      file_name: safeName,
       file_size: file.size,
       file_type: file.type,
       file_url: urlData.publicUrl,

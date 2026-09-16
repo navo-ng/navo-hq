@@ -205,10 +205,11 @@ export default function InviteMemberPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="invite-email" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Email Address *
             </label>
             <Input
+              id="invite-email"
               type="email"
               placeholder="colleague@company.com"
               value={email}
@@ -218,11 +219,12 @@ export default function InviteMemberPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="invite-role" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
               <Shield size={14} className="mr-1 inline" />
               Role *
             </label>
             <select
+              id="invite-role"
               value={roleId}
               onChange={(e) => setRoleId(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -237,10 +239,11 @@ export default function InviteMemberPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="invite-message" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Message (optional)
             </label>
             <textarea
+              id="invite-message"
               placeholder="A note for the invitation..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}

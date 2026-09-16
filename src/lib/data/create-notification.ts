@@ -68,8 +68,8 @@ export async function createNotification({
     const urlMap: Record<string, string> = {
       task: `/tasks?id=${entityId}`,
       project: `/projects/${entityId}`,
-      decision: `/decisions?id=${entityId}`,
-      document: `/documents?id=${entityId}`,
+      decision: `/decisions/${entityId}`,
+      document: `/documents/${entityId}`,
     };
     const pushUrl = entityType && entityId ? urlMap[entityType] || "/dashboard" : "/dashboard";
 

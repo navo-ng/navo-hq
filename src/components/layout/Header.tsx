@@ -58,6 +58,7 @@ export function Header({ onSearchClick }: { onSearchClick?: () => void }) {
           onClick={() => document.dispatchEvent(new CustomEvent("open-shortcuts-help"))}
           className="rounded-lg p-2.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           title="Keyboard shortcuts"
+          aria-label="Keyboard shortcuts"
         >
           <Keyboard size={18} />
         </button>

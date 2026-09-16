@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -16,7 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
+import { isWorkspaceAdmin } from "@/lib/utils/roles";
 import { AccessDenied } from "@/components/ui/AccessDenied";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   fetchWebhooks,
   createWebhook,
@@ -31,7 +34,6 @@ import { useToast } from "@/lib/hooks/useToast";
 
 export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
@@ -45,22 +47,15 @@ export default function WebhooksPage() {
   const supabase = createClient();
 
   const { role, loading: userLoading } = useCurrentUser();
-  const isAdmin = role === "owner" || role === "admin";
+  const isAdmin = isWorkspaceAdmin(role);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const data = await fetchWebhooks(supabase);
-      if (!cancelled) {
-        setWebhooks(data);
-        setIsLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
+  const { isLoading, error, refetch } = useDataFetcher(async () => {
+    const data = await fetchWebhooks(supabase);
+    setWebhooks(data);
+    return data;
+  }, {
+    errorMessage: "Failed to load webhooks",
+  });
 
   const resetForm = () => {
     setName("");
@@ -185,6 +180,8 @@ export default function WebhooksPage() {
             />
           ))}
         </div>
+      ) : error ? (
+        <ErrorState message={error.message} onRetry={refetch} />
       ) : webhooks.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
           <Webhook size={32} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />

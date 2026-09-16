@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, GripVertical, Plus } from "lucide-react";
 import { updateTaskStatus } from "@/lib/data/tasks";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/lib/hooks/useToast";
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -126,6 +127,8 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [overStatusId, setOverStatusId] = useState<string | null>(null);
   const dragNodeRef = useRef<HTMLDivElement | null>(null);
+  const isMovingRef = useRef(false);
+  const { showToast } = useToast();
   const supabase = createClient();
 
   const tasksByStatus = useMemo(() => {
@@ -186,11 +189,22 @@ export function KanbanBoard({
         return;
       }
 
-      await updateTaskStatus(supabase, taskId, statusId);
-      setOverStatusId(null);
-      onTaskMoved();
+      if (isMovingRef.current) {
+        setOverStatusId(null);
+        return;
+      }
+      isMovingRef.current = true;
+      try {
+        await updateTaskStatus(supabase, taskId, statusId);
+        onTaskMoved();
+      } catch {
+        showToast({ title: "Failed to move task. Please try again.", type: "error" });
+      } finally {
+        isMovingRef.current = false;
+        setOverStatusId(null);
+      }
     },
-    [tasks, supabase, onTaskMoved]
+    [tasks, supabase, onTaskMoved, showToast]
   );
 
   return (
@@ -235,6 +249,7 @@ export function KanbanBoard({
                   onClick={() => onCreateTask(status.id)}
                   className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                   title={`Add task to ${status.name}`}
+                  aria-label={`Add task to ${status.name}`}
                 >
                   <Plus size={16} />
                 </button>

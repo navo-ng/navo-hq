@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAllUsers } from "@/lib/data/users";
 import { fetchTaskStatuses, fetchTaskPriorities } from "@/lib/data/tasks";
+import { useToast } from "@/lib/hooks/useToast";
 
 interface BulkEditDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function BulkEditDialog({
   const [priorityId, setPriorityId] = useState("");
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!open) return;
@@ -41,34 +43,46 @@ export function BulkEditDialog({
     setChangePriority(false);
     setPriorityId("");
     async function load() {
-      const [u, s, p] = await Promise.all([
-        fetchAllUsers(supabase),
-        fetchTaskStatuses(supabase),
-        fetchTaskPriorities(supabase),
-      ]);
-      setUsers(u.map((u) => ({ id: u.id, name: u.name })));
-      setStatuses(s);
-      setPriorities(p);
+      try {
+        const [u, s, p] = await Promise.all([
+          fetchAllUsers(supabase),
+          fetchTaskStatuses(supabase),
+          fetchTaskPriorities(supabase),
+        ]);
+        setUsers(u.map((u) => ({ id: u.id, name: u.name })));
+        setStatuses(s);
+        setPriorities(p);
+      } catch {
+        showToast({ title: "Failed to load options", type: "error" });
+      }
     }
-    load();
+    load().catch(() => {
+      showToast({ title: "Failed to load options", type: "error" });
+    });
   }, [open, supabase]);
 
   const handleApply = async () => {
     setSaving(true);
-    const updates: Record<string, unknown> = {};
-    if (changeStatus && statusId) updates.status_id = statusId;
-    if (changeAssignee) updates.owner_id = assigneeId || null;
-    if (changePriority && priorityId) updates.priority_id = priorityId;
+    try {
+      const updates: Record<string, unknown> = {};
+      if (changeStatus && statusId) updates.status_id = statusId;
+      if (changeAssignee) updates.owner_id = assigneeId || null;
+      if (changePriority && priorityId) updates.priority_id = priorityId;
 
-    if (Object.keys(updates).length === 0) {
+      if (Object.keys(updates).length === 0) {
+        setSaving(false);
+        return;
+      }
+
+      const { error } = await supabase.from("tasks").update(updates).in("id", taskIds);
+      if (error) throw error;
+      onUpdated();
+      onClose();
+    } catch {
+      showToast({ title: "Failed to update tasks", type: "error" });
+    } finally {
       setSaving(false);
-      return;
     }
-
-    await supabase.from("tasks").update(updates).in("id", taskIds);
-    setSaving(false);
-    onUpdated();
-    onClose();
   };
 
   const hasChanges =

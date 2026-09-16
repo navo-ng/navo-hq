@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from "react";
 import { Plus, GripVertical, X, BarChart3, ChevronDown, ChevronRight, Printer, LayoutGrid, List, Sparkles, FileText, Download, Target, CheckSquare, Upload, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskStatusChart from "@/components/dashboard/TaskStatusChart";
@@ -38,6 +38,20 @@ import { tasksToCSV, downloadCSV } from "@/lib/utils/csv-export";
 import { useToast } from "@/lib/hooks/useToast";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { MESSAGES } from "@/lib/utils/messages";
+import { useSearchParams } from "next/navigation";
+
+function DeepLinkOpener({ tasks, onOpen }: { tasks: Task[]; onOpen: (task: Task) => void }) {
+  const searchParams = useSearchParams();
+  const deepLinkId = searchParams.get("id");
+
+  useEffect(() => {
+    if (!deepLinkId || tasks.length === 0) return;
+    const found = tasks.find((t) => t.id === deepLinkId);
+    if (found) onOpen(found);
+  }, [deepLinkId, tasks, onOpen]);
+
+  return null;
+}
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -236,10 +250,10 @@ export default function TasksPage() {
     }
   };
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = useCallback((task: Task) => {
     setSelectedTask(task);
     setDetailDrawerOpen(true);
-  };
+  }, []);
 
   const handleTaskDeleted = async () => {
     try {
@@ -721,6 +735,9 @@ export default function TasksPage() {
         />
       )}
 
+      <Suspense fallback={null}>
+        <DeepLinkOpener tasks={tasks} onOpen={handleTaskClick} />
+      </Suspense>
       <CreateTaskDialog
         open={createDialogOpen}
         onClose={() => { setCreateDialogOpen(false); setCreateTaskStatusId(null); }}

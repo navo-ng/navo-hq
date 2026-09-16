@@ -155,12 +155,14 @@ export async function saveCustomFieldValues(
   }
 
   // Remove fields set to null
-  const nullFields = Object.entries(values).filter(([_, v]) => v === null || v === undefined);
-  for (const [fieldId] of nullFields) {
+  const nullFieldIds = Object.entries(values)
+    .filter(([_, v]) => v === null || v === undefined)
+    .map(([fieldId]) => fieldId);
+  if (nullFieldIds.length > 0) {
     await supabase
       .from("custom_field_values")
       .delete()
-      .eq("field_id", fieldId)
+      .in("field_id", nullFieldIds)
       .eq("entity_id", entityId);
   }
 }

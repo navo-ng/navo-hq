@@ -56,6 +56,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [filter, setFilter] = useState<FilterTab>("all");
@@ -101,7 +102,9 @@ export default function NotificationsPage() {
   };
 
   const handleMarkAllRead = async () => {
+    if (isMarkingAllRead) return;
     try {
+      setIsMarkingAllRead(true);
       const uid = (await supabase.auth.getUser()).data.user?.id;
       if (!uid) return;
       await dbMarkAllRead(supabase, uid);
@@ -110,6 +113,8 @@ export default function NotificationsPage() {
       showToast({ title: "All notifications marked as read", type: "success" });
     } catch {
       showToast({ title: "Failed to mark all as read", type: "error" });
+    } finally {
+      setIsMarkingAllRead(false);
     }
   };
 
@@ -145,7 +150,7 @@ export default function NotificationsPage() {
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="secondary" size="sm" onClick={handleMarkAllRead}>
+          <Button variant="secondary" size="sm" onClick={handleMarkAllRead} disabled={isMarkingAllRead}>
             <CheckCheck size={14} />
             Mark all read
           </Button>
@@ -157,7 +162,7 @@ export default function NotificationsPage() {
           <button
             key={tab}
             onClick={() => setFilter(tab)}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navo-blue ${
               filter === tab
                 ? "bg-navo-blue/10 text-navo-blue"
                 : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -215,7 +220,7 @@ export default function NotificationsPage() {
                 <button
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
-                  className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+                  className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-navo-blue dark:hover:bg-gray-800/50 ${
                     !notification.is_read ? "bg-navo-blue/5" : ""
                   } ${route ? "cursor-pointer" : ""}`}
                 >

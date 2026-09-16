@@ -20,6 +20,7 @@ import {
   fetchDecisionVotes,
 } from "@/lib/data/decisions";
 import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
 import { useToast } from "@/lib/hooks/useToast";
@@ -276,34 +277,28 @@ export default function DecisionsPage() {
       />
 
       {filteredDecisions.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center dark:border-gray-800 dark:bg-gray-900">
-          {searchQuery || statusFilter !== "all" || ownerFilter !== "all" ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No decisions match your filters.
-            </p>
-          ) : isViewer ? (
-            <>
+        searchQuery || statusFilter !== "all" || ownerFilter !== "all" ? (
+          <EmptyState title="No decisions match your filters." />
+        ) : isViewer ? (
+          <EmptyState
+            icon={
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
                 <Vote size={24} className="text-navo-blue" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                No decisions yet
-              </h3>
-              <p className="mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
-                No decisions have been created yet.
-              </p>
-            </>
-          ) : (
-            <>
+            }
+            title="No decisions yet"
+            description="No decisions have been created yet."
+          />
+        ) : (
+          <EmptyState
+            icon={
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-navo-light dark:bg-navo-blue/10">
                 <Vote size={24} className="text-navo-blue" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                No decisions yet
-              </h3>
-              <p className="mb-6 mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
-                Track and manage important team decisions in one place. Propose, discuss, and finalize decisions together.
-              </p>
+            }
+            title="No decisions yet"
+            description="Track and manage important team decisions in one place. Propose, discuss, and finalize decisions together."
+            action={
               <button
                 onClick={() => setCreateDialogOpen(true)}
                 className="inline-flex items-center gap-2 rounded-lg bg-navo-blue px-4 py-2 text-sm font-medium text-white hover:bg-navo-deep transition-colors"
@@ -311,9 +306,9 @@ export default function DecisionsPage() {
                 <Plus size={16} />
                 Create your first decision
               </button>
-            </>
-          )}
-        </div>
+            }
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDecisions.map((decision) => (

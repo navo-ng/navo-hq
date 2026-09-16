@@ -25,6 +25,7 @@ import {
   Download,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/utils/csv-export";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface TimeEntryRow {
   hours: number;
@@ -74,6 +75,8 @@ export default function TimeReportsPage() {
   const [range, setRange] = useState<FilterRange>("week");
   const [entries, setEntries] = useState<TimeEntryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const { theme } = useTheme();
 
   const supabase = createClient();
@@ -81,47 +84,56 @@ export default function TimeReportsPage() {
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      const { from, to } = getRangeDates(range);
+      setError(null);
+      try {
+        const { from, to } = getRangeDates(range);
 
-      const { data } = await supabase
-        .from("time_entries")
-        .select(
-          "hours, date, description, task:tasks(id, title, project:projects(id, name)), user:profiles!time_entries_user_id_fkey(id, name)"
-        )
-        .gte("date", from)
-        .lte("date", to)
-        .order("date", { ascending: false });
+        const { data, error: queryError } = await supabase
+          .from("time_entries")
+          .select(
+            "hours, date, description, task:tasks(id, title, project:projects(id, name)), user:profiles!time_entries_user_id_fkey(id, name)"
+          )
+          .gte("date", from)
+          .lte("date", to)
+          .order("date", { ascending: false });
 
-      // Map raw rows, converting minutes to hours
-      const mapped: TimeEntryRow[] = (data || []).map((row: Record<string, unknown>) => {
-        const rawHours = row.hours as number | null;
-        const taskRaw = row.task as Record<string, unknown> | null;
-        const projectRaw = taskRaw?.project as Record<string, unknown> | null;
-        const userRaw = row.user as Record<string, unknown> | null;
+        if (queryError) throw queryError;
 
-        return {
-          hours: rawHours != null ? rawHours / 60 : 0,
-          date: row.date as string,
-          description: row.description as string | null,
-          task: taskRaw
-            ? {
-                id: taskRaw.id as string,
-                title: taskRaw.title as string,
-                project: projectRaw
-                  ? { id: projectRaw.id as string, name: projectRaw.name as string }
-                  : null,
-              }
-            : null,
-          user: userRaw ? { id: userRaw.id as string, name: userRaw.name as string } : null,
-        };
-      });
+        // Map raw rows, converting minutes to hours
+        const mapped: TimeEntryRow[] = (data || []).map((row: Record<string, unknown>) => {
+          const rawHours = row.hours as number | null;
+          const taskRaw = row.task as Record<string, unknown> | null;
+          const projectRaw = taskRaw?.project as Record<string, unknown> | null;
+          const userRaw = row.user as Record<string, unknown> | null;
 
-      setEntries(mapped);
-      setIsLoading(false);
+          return {
+            hours: rawHours != null ? rawHours / 60 : 0,
+            date: row.date as string,
+            description: row.description as string | null,
+            task: taskRaw
+              ? {
+                  id: taskRaw.id as string,
+                  title: taskRaw.title as string,
+                  project: projectRaw
+                    ? { id: projectRaw.id as string, name: projectRaw.name as string }
+                    : null,
+                }
+              : null,
+            user: userRaw ? { id: userRaw.id as string, name: userRaw.name as string } : null,
+          };
+        });
+
+        setEntries(mapped);
+      } catch (err) {
+        console.error("Failed to load time entries:", err);
+        setError("Failed to load time entries. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     load();
-  }, [range, supabase]);
+  }, [range, supabase, retryKey]);
 
   const chartGridStroke = theme === "dark" ? "#374151" : "#E5E7EB";
   const tooltipBorderColor = theme === "dark" ? "#374151" : "#E5E7EB";
@@ -245,6 +257,19 @@ export default function TimeReportsPage() {
             <div key={i} className="h-24 animate-pulse rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reports</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Track team productivity and performance.</p>
+        </div>
+        <ReportTabs />
+        <ErrorState message={error} onRetry={() => { setError(null); setIsLoading(true); setRetryKey((k) => k + 1); }} />
       </div>
     );
   }

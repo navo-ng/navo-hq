@@ -12,6 +12,7 @@ import { TeamMember, TeamRole } from "@/types/team";
 import { createClient } from "@/lib/supabase/client";
 import { fetchTeam, fetchRoles } from "@/lib/data/team";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { isWorkspaceAdmin } from "@/lib/utils/roles";
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
   owner: "#F59E0B",
@@ -29,7 +30,7 @@ export default function TeamPage() {
 
   const supabase = createClient();
   const { role } = useCurrentUser();
-  const isAdmin = role === "owner" || role === "admin";
+  const isAdmin = isWorkspaceAdmin(role);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,6 +188,7 @@ export default function TeamPage() {
               />
               <Input
                 placeholder="Search members..."
+                aria-label="Search team members"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"

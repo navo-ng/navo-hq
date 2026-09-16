@@ -41,7 +41,7 @@ export function AttachmentSection({ taskId, onAttachmentsChanged }: AttachmentSe
 
   useEffect(() => {
     loadAttachments();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
       if (data.user) setCurrentUserId(data.user.id);
     });
   }, [loadAttachments, supabase]);
@@ -52,9 +52,14 @@ export function AttachmentSection({ taskId, onAttachmentsChanged }: AttachmentSe
 
     setIsUploading(true);
     let successCount = 0;
+    let lastError: string | null = null;
     for (const file of fileArray) {
-      const result = await uploadAttachment(supabase, taskId, file);
-      if (result) successCount++;
+      try {
+        const result = await uploadAttachment(supabase, taskId, file);
+        if (result) successCount++;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : MESSAGES.ATTACHMENT_ERROR;
+      }
     }
     setIsUploading(false);
 
@@ -62,8 +67,9 @@ export function AttachmentSection({ taskId, onAttachmentsChanged }: AttachmentSe
       showToast({ title: MESSAGES.ATTACHMENT_UPLOADED, type: "success" });
       loadAttachments();
       onAttachmentsChanged?.();
-    } else {
-      showToast({ title: MESSAGES.ATTACHMENT_ERROR, type: "error" });
+    }
+    if (lastError || successCount === 0) {
+      showToast({ title: lastError || MESSAGES.ATTACHMENT_ERROR, type: "error" });
     }
   };
 

@@ -13,6 +13,8 @@ import {
 } from "@/lib/data/time-entries";
 import { Clock, Trash2, Plus } from "lucide-react";
 import { Task } from "@/types/task";
+import { useToast } from "@/lib/hooks/useToast";
+import { MESSAGES } from "@/lib/utils/messages";
 
 interface TimeTrackerProps {
   taskId: string;
@@ -40,6 +42,7 @@ export function TimeTracker({ taskId, task, onUpdate }: TimeTrackerProps) {
   const [timerStart, setTimerStart] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const supabase = createClient();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (task?.active_timer_start) {
@@ -60,32 +63,42 @@ export function TimeTracker({ taskId, task, onUpdate }: TimeTrackerProps) {
   }, [timerRunning, timerStart]);
 
   const handleStartTimer = async () => {
-    const now = new Date().toISOString();
-    await supabase.from("tasks").update({ active_timer_start: now }).eq("id", taskId);
-    setTimerRunning(true);
-    setTimerStart(now);
-    setElapsed(0);
+    try {
+      const now = new Date().toISOString();
+      await supabase.from("tasks").update({ active_timer_start: now }).eq("id", taskId);
+      setTimerRunning(true);
+      setTimerStart(now);
+      setElapsed(0);
+      showToast({ title: "Timer started", type: "success" });
+    } catch {
+      showToast({ title: "Failed to start timer", type: "error" });
+    }
   };
 
   const handleStopTimer = async () => {
-    const minutesTracked = Math.max(1, Math.round(elapsed / 60));
-    await supabase.from("tasks").update({ active_timer_start: null }).eq("id", taskId);
-    const entry = await logTime(supabase, taskId, minutesTracked, "Timer entry");
-    setTimerRunning(false);
-    setTimerStart(null);
-    setElapsed(0);
-    if (entry) {
-      setEntries((prev) => [entry, ...prev]);
-      setTotalMinutes((prev) => prev + minutesTracked);
-    } else {
-      const [entriesData, totalData] = await Promise.all([
-        fetchTimeEntriesByTask(supabase, taskId),
-        fetchTotalTimeByTask(supabase, taskId),
-      ]);
-      setEntries(entriesData);
-      setTotalMinutes(totalData);
+    try {
+      const minutesTracked = Math.max(1, Math.round(elapsed / 60));
+      await supabase.from("tasks").update({ active_timer_start: null }).eq("id", taskId);
+      const entry = await logTime(supabase, taskId, minutesTracked, "Timer entry");
+      setTimerRunning(false);
+      setTimerStart(null);
+      setElapsed(0);
+      if (entry) {
+        setEntries((prev) => [entry, ...prev]);
+        setTotalMinutes((prev) => prev + minutesTracked);
+      } else {
+        const [entriesData, totalData] = await Promise.all([
+          fetchTimeEntriesByTask(supabase, taskId),
+          fetchTotalTimeByTask(supabase, taskId),
+        ]);
+        setEntries(entriesData);
+        setTotalMinutes(totalData);
+      }
+      showToast({ title: MESSAGES.TIME_LOGGED, type: "success" });
+      onUpdate?.();
+    } catch {
+      showToast({ title: "Failed to stop timer", type: "error" });
     }
-    onUpdate?.();
   };
 
   const formatElapsed = (totalSeconds: number) => {
@@ -118,24 +131,37 @@ export function TimeTracker({ taskId, task, onUpdate }: TimeTrackerProps) {
     if (totalMin <= 0) return;
 
     setSaving(true);
-    const entry = await logTime(supabase, taskId, totalMin, description.trim() || undefined);
-    setSaving(false);
+    try {
+      const entry = await logTime(supabase, taskId, totalMin, description.trim() || undefined);
 
-    if (entry) {
-      setEntries((prev) => [entry, ...prev]);
-      setTotalMinutes((prev) => prev + totalMin);
-      setHours("");
-      setMinutes("");
-      setDescription("");
-      setShowForm(false);
+      if (entry) {
+        setEntries((prev) => [entry, ...prev]);
+        setTotalMinutes((prev) => prev + totalMin);
+        setHours("");
+        setMinutes("");
+        setDescription("");
+        setShowForm(false);
+        showToast({ title: MESSAGES.TIME_LOGGED, type: "success" });
+      } else {
+        showToast({ title: "Failed to log time", type: "error" });
+      }
+    } catch {
+      showToast({ title: "Failed to log time", type: "error" });
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (entry: TimeEntry) => {
     if (!confirm("Delete this time entry?")) return;
-    await deleteTimeEntry(supabase, entry.id);
-    setEntries((prev) => prev.filter((e) => e.id !== entry.id));
-    setTotalMinutes((prev) => prev - entry.minutes);
+    try {
+      await deleteTimeEntry(supabase, entry.id);
+      setEntries((prev) => prev.filter((e) => e.id !== entry.id));
+      setTotalMinutes((prev) => prev - entry.minutes);
+      showToast({ title: "Time entry deleted", type: "success" });
+    } catch {
+      showToast({ title: "Failed to delete time entry", type: "error" });
+    }
   };
 
   return (

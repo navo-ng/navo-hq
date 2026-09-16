@@ -62,7 +62,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: { new: unknown }) => {
           const n = payload.new as Notification;
           setNotifications((prev) => [n, ...prev]);
           setUnreadCount((prev) => prev + 1);
@@ -90,7 +90,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: { new: unknown }) => {
           const updated = payload.new as Notification;
           setNotifications((prev) =>
             prev.map((n) => (n.id === updated.id ? updated : n))

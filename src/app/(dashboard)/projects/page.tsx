@@ -19,8 +19,8 @@ import {
   fetchAllUsers,
   fetchAllTags,
   createProject,
-  archiveProject,
-  updateProject,
+  bulkArchiveProjects,
+  bulkUpdateProjectStatus,
 } from "@/lib/data/projects";
 import { useRealtimeEntity } from "@/lib/hooks/useRealtimeEntity";
 import { useToast } from "@/lib/hooks/useToast";
@@ -218,9 +218,7 @@ export default function ProjectsPage() {
   const handleBulkArchive = async () => {
     try {
       const ids = Array.from(selectedIds);
-      for (const id of ids) {
-        await archiveProject(supabase, id);
-      }
+      await bulkArchiveProjects(supabase, ids);
       showToast({
         title: MESSAGES.PROJECTS_ARCHIVED.replace("{count}", String(ids.length)),
         type: "success",
@@ -236,9 +234,7 @@ export default function ProjectsPage() {
     if (!bulkStatusId) return;
     try {
       const ids = Array.from(selectedIds);
-      for (const id of ids) {
-        await updateProject(supabase, id, { status_id: bulkStatusId });
-      }
+      await bulkUpdateProjectStatus(supabase, ids, bulkStatusId);
       showToast({ title: MESSAGES.PROJECT_STATUS_CHANGED, type: "success" });
       setSelectedIds(new Set());
       setBulkStatusId("");

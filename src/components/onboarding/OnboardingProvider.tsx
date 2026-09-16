@@ -81,7 +81,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         user_id: userData.user.id,
         key: "onboarding_completed",
         value: { completed: true },
-      });
+      }, { onConflict: "user_id,key" });
     }
     setShowOnboarding(false);
   };

@@ -604,3 +604,34 @@ export async function fetchProjectTasks(
       : null,
   }));
 }
+
+export async function bulkArchiveProjects(
+  supabase: SupabaseClient,
+  ids: string[]
+): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from("projects")
+    .update({ is_archived: true })
+    .in("id", ids);
+  if (error) {
+    console.error("Error archiving projects:", error);
+    throw error;
+  }
+}
+
+export async function bulkUpdateProjectStatus(
+  supabase: SupabaseClient,
+  ids: string[],
+  status_id: string
+): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from("projects")
+    .update({ status_id })
+    .in("id", ids);
+  if (error) {
+    console.error("Error updating project status:", error);
+    throw error;
+  }
+}

@@ -18,6 +18,7 @@ import {
 } from "@/lib/data/settings";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
+import { isWorkspaceAdmin } from "@/lib/utils/roles";
 
 export default function SettingsPage() {
   const { theme: activeTheme, setTheme: setGlobalTheme } = useTheme();
@@ -185,7 +186,7 @@ export default function SettingsPage() {
     );
   }
 
-  const isAdmin = role === "owner" || role === "admin";
+  const isAdmin = isWorkspaceAdmin(role);
 
   return (
     <div className="space-y-6">

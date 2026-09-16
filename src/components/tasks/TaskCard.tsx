@@ -12,6 +12,7 @@ interface TaskCardProps {
   onClick: (task: Task) => void;
   onDelete?: (task: Task) => void;
   isViewer?: boolean;
+  dependencyCounts?: { incoming: number; outgoing: number };
 }
 
 function isOverdue(task: Task): boolean {
@@ -35,44 +36,63 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("en-NG", { month: "short", day: "numeric" });
 }
 
-function DependencyIndicator({ taskId }: { taskId: string }) {
-  const [count, setCount] = useState(0);
+function DependencyIndicator({
+  taskId,
+  counts,
+}: {
+  taskId: string;
+  counts?: { incoming: number; outgoing: number };
+}) {
+  const [count, setCount] = useState(
+    counts ? counts.incoming + counts.outgoing : 0
+  );
   const [blockedByNames, setBlockedByNames] = useState<string[]>([]);
 
   useEffect(() => {
+    if (counts) {
+      setCount(counts.incoming + counts.outgoing);
+      return;
+    }
     const supabase = createClient();
     let cancelled = false;
 
     async function load() {
-      const [blockedByRes, blockingRes] = await Promise.all([
-        supabase
-          .from("task_dependencies")
-          .select("task:blocks!task_dependencies_blocked_by_id_fkey(id, title)")
-          .eq("task_id", taskId),
-        supabase
-          .from("task_dependencies")
-          .select("task:tasks!task_dependencies_task_id_fkey(id, title)")
-          .eq("blocked_by_id", taskId),
-      ]);
+      try {
+        const [blockedByRes, blockingRes] = await Promise.all([
+          supabase
+            .from("task_dependencies")
+            .select("task:blocks!task_dependencies_blocked_by_id_fkey(id, title)")
+            .eq("task_id", taskId),
+          supabase
+            .from("task_dependencies")
+            .select("task:tasks!task_dependencies_task_id_fkey(id, title)")
+            .eq("blocked_by_id", taskId),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bb = (blockedByRes.data || [])
-        .map((r: any) => r.task)
-        .filter(Boolean) as { id: string; title: string }[];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bl = (blockingRes.data || [])
-        .map((r: any) => r.task)
-        .filter(Boolean) as { id: string; title: string }[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const bb = (blockedByRes.data || [])
+          .map((r: any) => r.task)
+          .filter(Boolean) as { id: string; title: string }[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const bl = (blockingRes.data || [])
+          .map((r: any) => r.task)
+          .filter(Boolean) as { id: string; title: string }[];
 
-      setCount(bb.length + bl.length);
-      setBlockedByNames(bb.map((t) => t.title));
+        setCount(bb.length + bl.length);
+        setBlockedByNames(bb.map((t) => t.title));
+      } catch {
+        if (!cancelled) {
+          setCount(0);
+          setBlockedByNames([]);
+        }
+      }
     }
 
     load();
     return () => { cancelled = true; };
-  }, [taskId]);
+  }, [taskId, counts]);
 
   if (count === 0) return null;
 
@@ -87,7 +107,7 @@ function DependencyIndicator({ taskId }: { taskId: string }) {
   );
 }
 
-export function TaskCard({ task, onClick, onDelete, isViewer }: TaskCardProps) {
+export function TaskCard({ task, onClick, onDelete, isViewer, dependencyCounts }: TaskCardProps) {
   const overdue = isOverdue(task);
   const statusName = task.status?.name || "Unknown";
   const statusColor = task.status?.color || "#9CA3AF";
@@ -110,9 +130,17 @@ export function TaskCard({ task, onClick, onDelete, isViewer }: TaskCardProps) {
   };
 
   return (
-    <button
+    <div
       onClick={() => onClick(task)}
-      className={`w-full rounded-xl border bg-white p-4 text-left transition-all hover:shadow-md dark:bg-gray-900 ${
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick(task);
+        }
+      }}
+      className={`w-full cursor-pointer rounded-xl border bg-white p-4 text-left transition-all hover:shadow-md dark:bg-gray-900 ${
         overdue
           ? "border-red-200 hover:border-red-300 dark:border-red-900"
           : "border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700"
@@ -123,7 +151,7 @@ export function TaskCard({ task, onClick, onDelete, isViewer }: TaskCardProps) {
           <div className="mb-1.5 flex items-center gap-2">
             <Badge color={priorityColor}>{priorityName}</Badge>
             <Badge color={statusColor}>{statusName}</Badge>
-            <DependencyIndicator taskId={task.id} />
+            <DependencyIndicator taskId={task.id} counts={dependencyCounts} />
           </div>
           <h3 className="mb-1 text-sm font-medium text-gray-900 dark:text-white">
             {task.title}
@@ -174,6 +202,6 @@ export function TaskCard({ task, onClick, onDelete, isViewer }: TaskCardProps) {
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 }

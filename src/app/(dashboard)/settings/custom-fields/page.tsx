@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Plus, Trash2, GripVertical, X, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,10 @@ import { Select } from "@/components/ui/select";
 import { Dialog } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useDataFetcher } from "@/lib/hooks/useDataFetcher";
+import { isWorkspaceAdmin } from "@/lib/utils/roles";
 import { AccessDenied } from "@/components/ui/AccessDenied";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   CustomFieldDefinition,
   fetchCustomFieldDefinitions,
@@ -21,7 +24,6 @@ import {
 
 export default function CustomFieldsPage() {
   const [fields, setFields] = useState<CustomFieldDefinition[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<CustomFieldDefinition["field_type"]>("text");
@@ -33,19 +35,17 @@ export default function CustomFieldsPage() {
   const supabase = createClient();
 
   const { role, loading: userLoading } = useCurrentUser();
-  const isAdmin = role === "owner" || role === "admin";
+  const isAdmin = isWorkspaceAdmin(role);
 
-  useEffect(() => {
-    loadFields();
-  }, []);
-
-  const loadFields = async () => {
-    setIsLoading(true);
+  const { isLoading, error, refetch } = useDataFetcher(async () => {
     const taskFields = await fetchCustomFieldDefinitions(supabase, "task");
     const projectFields = await fetchCustomFieldDefinitions(supabase, "project");
-    setFields([...taskFields, ...projectFields].sort((a, b) => a.position - b.position));
-    setIsLoading(false);
-  };
+    const all = [...taskFields, ...projectFields].sort((a, b) => a.position - b.position);
+    setFields(all);
+    return all;
+  }, {
+    errorMessage: "Failed to load custom fields",
+  });
 
   const handleCreate = async () => {
     if (!newFieldName.trim()) return;
@@ -66,7 +66,7 @@ export default function CustomFieldsPage() {
     setNewFieldType("text");
     setNewFieldOptions("");
     setCreateDialogOpen(false);
-    loadFields();
+    refetch();
   };
 
   const handleUpdate = async () => {
@@ -83,13 +83,13 @@ export default function CustomFieldsPage() {
     });
 
     setEditingField(null);
-    loadFields();
+    refetch();
   };
 
   const handleDelete = async (id: string) => {
     await deleteCustomFieldDefinition(supabase, id);
     setDeleteConfirm(null);
-    loadFields();
+    refetch();
   };
 
   const handleReorder = async (dragIndex: number, dropIndex: number) => {
@@ -147,6 +147,8 @@ export default function CustomFieldsPage() {
             />
           ))}
         </div>
+      ) : error ? (
+        <ErrorState message={error.message} onRetry={refetch} />
       ) : (
         <>
           {taskFields.length > 0 && (

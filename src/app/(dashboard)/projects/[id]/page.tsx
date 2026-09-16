@@ -291,8 +291,8 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
     new Date(project.target_date) < new Date() &&
     project.status?.name !== "Completed";
 
-  const isOwnerOrAdmin = currentUserRole === "admin";
-  const isEditorOrAbove = currentUserRole === "editor" || currentUserRole === "admin";
+  const isOwnerOrAdmin = currentUserRole === "admin" || (currentUserRole as string) === "owner";
+  const isEditorOrAbove = currentUserRole === "editor" || currentUserRole === "admin" || (currentUserRole as string) === "owner";
 
   const overviewStats = [
     {

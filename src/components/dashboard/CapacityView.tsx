@@ -81,14 +81,14 @@ export function CapacityView() {
         .select("user_id, minutes")
         .gte("date", weekStart.toISOString().split("T")[0]);
 
-      const memberData: CapacityMember[] = profiles.map((p) => {
+      const memberData: CapacityMember[] = profiles.map((p: { id: string; name: string | null; avatar_url: string | null }) => {
         const activeTasks = (tasks || []).filter(
-          (t) => t.owner_id === p.id && t.status_id !== doneStatusId
+          (t: { owner_id: string | null; status_id: string }) => t.owner_id === p.id && t.status_id !== doneStatusId
         ).length;
 
         const totalMinutes = (timeEntries || [])
-          .filter((t) => t.user_id === p.id)
-          .reduce((sum, t) => sum + (t.minutes || 0), 0);
+          .filter((t: { user_id: string; minutes: number | null }) => t.user_id === p.id)
+          .reduce((sum: number, t: { minutes: number | null }) => sum + (t.minutes || 0), 0);
 
         return {
           id: p.id,
